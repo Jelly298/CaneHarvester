@@ -54,28 +54,28 @@ public class CaneHarvester
 
 
     boolean locked = false;
-    boolean process1 = false;
-    boolean process2 = false;
-    boolean process3 = false;
-    boolean process4 = false;
-    boolean error = false;
-    boolean emergency = false;
-    boolean setspawned = false;
-    boolean setAntiStuck = false;
-    boolean set = false; //whether HAS CHANGED motion (1&2)
-    boolean set3 = false; //same but motion 3
-    boolean rotating = false;
-    boolean full = false;
+    static boolean process1 = false;
+    static boolean process2 = false;
+    static boolean process3 = false;
+    static boolean process4 = false;
+    static boolean error = false;
+    static boolean emergency = false;
+    static boolean setspawned = false;
+    static boolean setAntiStuck = false;
+    volatile static boolean set = false; //whether HAS CHANGED motion (1&2)
+    volatile static boolean set3 = false; //same but motion 3
+    static boolean rotating = false;
+    static boolean full = false;
 
 
-    double beforeX = 0;
-    double beforeZ = 0;
-    double beforeY = 0;
-    double deltaX = 10000;
-    double deltaZ = 10000;
-    double deltaY = 0;
-    double initialX = 0;
-    double initialZ = 0;
+    static double beforeX = 0;
+    static double beforeZ = 0;
+    static double beforeY = 0;
+    static double deltaX = 10000;
+    static double deltaZ = 10000;
+    static double deltaY = 0;
+    static double initialX = 0;
+    static double initialZ = 0;
     
     boolean notInIsland = false;
     boolean shdBePressingKey = true;
@@ -98,7 +98,7 @@ public class CaneHarvester
     static volatile int moneyper10sec = 0;
 
     MouseHelper mouseHelper = new MouseHelper();
-    int playerYaw = 0;
+    static int playerYaw = 0;
     private static Logger logger;
 
 
@@ -166,6 +166,12 @@ public class CaneHarvester
     {
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
             mc.fontRendererObj.drawString("Angle : " + playerYaw, 4, 4, -1);
+            mc.fontRendererObj.drawString("Minecraft yaw : " + mc.thePlayer.rotationYaw, 4, 16, -1);
+            mc.fontRendererObj.drawString("KeyBindW : " + (mc.gameSettings.keyBindForward.isKeyDown() ? "Pressed" : "Not pressed"), 4, 28, -1);
+            mc.fontRendererObj.drawString("KeyBindS : " + (mc.gameSettings.keyBindBack.isKeyDown() ? "Pressed" : "Not pressed"), 4, 40, -1);
+            mc.fontRendererObj.drawString("KeyBindA : " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, 52, -1);
+            mc.fontRendererObj.drawString("KeyBindD : " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, 64, -1);
+
         }
 
     }
@@ -181,7 +187,6 @@ public class CaneHarvester
         if( mc.thePlayer != null && mc.theWorld != null){
             if(!rotating)
                 playerYaw = Math.round(Utils.get360RotationYaw()/90) < 4 ? Math.round(Utils.get360RotationYaw()/90) * 90 : 0;
-
         }
 
         //script code
@@ -223,17 +228,20 @@ public class CaneHarvester
                         try{
                             process3 = false;
                             Thread.sleep(100);
-                            KeyBinding.setKeyBindState(keybindS, true);
-                            Thread.sleep(300);
-                            KeyBinding.setKeyBindState(keybindS, false);
                             KeyBinding.setKeyBindState(keybindD, true);
-                            Thread.sleep(300);
+                            Thread.sleep(200);
                             KeyBinding.setKeyBindState(keybindD, false);
+                            KeyBinding.setKeyBindState(keybindA, true);
+                            Thread.sleep(200);
+                            KeyBinding.setKeyBindState(keybindA, false);
                             if(Utils.getFrontBlock() == Blocks.air) {
-                                    initialX = mc.thePlayer.posX;
-                                    initialZ = mc.thePlayer.posZ;
-                                    process3 = true;
+                                initialX = mc.thePlayer.posX;
+                                initialZ = mc.thePlayer.posZ;
+                                process3 = true;
+                            } else{
+                                process1 = true;
                             }
+
                             ExecuteRunnable(stopAntistuck);
 
                             //exec
@@ -271,26 +279,31 @@ public class CaneHarvester
                 enabled = false;
 
             }
-            else if ((float)dx == 0 && dz == 0 && !notInIsland && !emergency && !process4 && !process3){
+            if (Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !notInIsland && !emergency && !process4 && !process3){
 
-                if(!set3 && (mc.thePlayer.posZ != initialZ || mc.thePlayer.posX != initialX) && !rotating &&
-                        (Utils.getFrontBlock() == Blocks.air || Utils.getBackBlock() == Blocks.air)){
-                    ExecuteRunnable(Motion3);
+                if(!set3 && (Utils.roundTo2DecimalPlaces(mc.thePlayer.posZ) != Utils.roundTo2DecimalPlaces(initialZ) ||
+                        Utils.roundTo2DecimalPlaces(mc.thePlayer.posX) != Utils.roundTo2DecimalPlaces(initialX)) && !rotating){
+
                     set3 = true;
+                    ExecuteRunnable(Motion3);
                     stop();
                     KeyBinding.onTick(keybindS);
 
                 }
             }
-            else if(process3 && (Math.abs(mc.thePlayer.posX - initialX) >= 5.5f || Math.abs(mc.thePlayer.posZ - initialZ) >= 5.5f)){
+            if(process3 && (Math.abs(mc.thePlayer.posX - initialX) > 5.5f || Math.abs(mc.thePlayer.posZ - initialZ) > 5.5f)){
+
+
                 if(!set3 && !rotating){
-                    ExecuteRunnable(Motion3);
+
                     set3 = true;
+                    ExecuteRunnable(Motion3);
                     stop();
                     KeyBinding.onTick(keybindS);
 
                 }
             }
+            //System.out.println(Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !notInIsland && !emergency && !process4 && !process3)
 
 
             // Processes //
@@ -389,10 +402,11 @@ public class CaneHarvester
                     rotating = true;
                     enabled = false;
                     Thread.sleep(1000);
-                    playerYaw = Math.abs(playerYaw - 180);
+                    playerYaw = Math.round(Math.abs(playerYaw - 180));
                     Utils.smoothRotateClockwise(180);
                     Thread.sleep(2000);
                     rotating = false;
+                    initialize();
                     enabled = true;
                 }catch(Exception e){
                     e.printStackTrace();
@@ -432,13 +446,14 @@ public class CaneHarvester
                 initialX = mc.thePlayer.posX;
                 initialZ = mc.thePlayer.posZ;
 
-                System.out.println("hi");
+                set3 = false;
+
                 if(!process3){
                     ExecuteRunnable(changeMotion);
                     ScheduleRunnable(PressS, 200, TimeUnit.MILLISECONDS);
                 }
 
-                set3 = false;
+
 
             }
         }

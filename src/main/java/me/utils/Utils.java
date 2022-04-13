@@ -155,6 +155,9 @@ public class Utils {
         Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_PURPLE +
                 "CANE_HARVESTER " + EnumChatFormatting.GRAY + message));
     }
+    public static double roundTo2DecimalPlaces(double d){
+        return Math.floor(d * 100) / 100;
+    }
 
 
 
