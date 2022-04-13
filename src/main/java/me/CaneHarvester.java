@@ -449,7 +449,7 @@ public class CaneHarvester
         public void run() {
             try{
                 KeyBinding.setKeyBindState(keybindS, true);
-                Thread.sleep(100);
+                Thread.sleep(300);
                 KeyBinding.setKeyBindState(keybindS, false);
             }catch(Exception e) {
                 e.printStackTrace();
