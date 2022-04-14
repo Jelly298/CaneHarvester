@@ -56,30 +56,31 @@ public class CaneHarvester
 
 
     boolean locked = false;
-    static boolean process1 = false;
-    static boolean process2 = false;
-    static boolean process3 = false;
-    static boolean process4 = false;
-    static boolean error = false;
-    static boolean emergency = false;
-    static boolean setspawned = false;
-    static boolean setAntiStuck = false;
+    volatile static boolean process1 = false;
+    volatile static boolean process2 = false;
+    volatile static boolean process3 = false;
+    volatile static boolean process4 = false;
+    volatile static boolean error = false;
+    volatile static boolean emergency = false;
+    volatile static boolean setcycled = false;
+    volatile static boolean setAntiStuck = false;
     volatile static boolean set = false; //whether HAS CHANGED motion (1&2)
     volatile static boolean set3 = false; //same but motion 3
-    static boolean rotating = false;
+    volatile static boolean rotating = false;
 
 
-    static double beforeX = 0;
-    static double beforeZ = 0;
-    static double beforeY = 0;
-    static double deltaX = 10000;
-    static double deltaZ = 10000;
-    static double deltaY = 0;
-    static double initialX = 0;
-    static double initialZ = 0;
-    
-    boolean notInIsland = false;
-    boolean shdBePressingKey = true;
+
+    volatile static double beforeX = 0;
+    volatile static double beforeZ = 0;
+    volatile static double beforeY = 0;
+    volatile static double deltaX = 10000;
+    volatile static double deltaZ = 10000;
+    volatile static double deltaY = 0;
+    volatile static double initialX = 0;
+    volatile static double initialZ = 0;
+
+    volatile boolean notInIsland = false;
+    volatile boolean shdBePressingKey = true;
     public static boolean openedGUI = false;
 
     public int keybindA = mc.gameSettings.keyBindLeft.getKeyCode();
@@ -173,6 +174,7 @@ public class CaneHarvester
             mc.fontRendererObj.drawString("KeyBindS : " + (mc.gameSettings.keyBindBack.isKeyDown() ? "Pressed" : "Not pressed"), 4, 40, -1);
             mc.fontRendererObj.drawString("KeyBindA : " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, 52, -1);
             mc.fontRendererObj.drawString("KeyBindD : " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, 64, -1);
+            mc.fontRendererObj.drawString("Front block : " + Utils.getFrontBlock(), 4, 76, -1);
 
         }
 
@@ -194,6 +196,7 @@ public class CaneHarvester
         //script code
         if (enabled && mc.thePlayer != null && mc.theWorld != null) {
 
+            System.out.println(process1 + " " + process2 + " " + process3);
             //always
             mc.gameSettings.pauseOnLostFocus = false;
             mc.thePlayer.inventory.currentItem = 0;
@@ -275,7 +278,7 @@ public class CaneHarvester
             double dz = Math.abs(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ);
             double dy = Math.abs(mc.thePlayer.posY - mc.thePlayer.lastTickPosY);
             boolean falling = blockIn == Blocks.air && dy != 0;
-            if(falling && !rotating && !emergency && !notInIsland){
+            if(falling && !rotating && !emergency && !notInIsland && dx == 0 && dz == 0){
                 cycles = 0;
                 Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
                 ExecuteRunnable(changeLayer);
@@ -316,16 +319,15 @@ public class CaneHarvester
                     KeyBinding.setKeyBindState(keybindD, true);
                     KeyBinding.setKeyBindState(keybindA, false);
                     KeyBinding.setKeyBindState(keybindW, false);
-                    if(!setspawned)
+                    if(!setcycled)
                     {
-                        mc.thePlayer.sendChatMessage("/setspawn");
-                        setspawned = true;
+                        setcycled = true;
                         cycles++;
                     }
                 }
 
             } else if (process2 && !process3 && !process4) {
-                setspawned = false;
+                setcycled = false;
                 if (shdBePressingKey) {
 
                     KeyBinding.setKeyBindState(keybindAttack, true);
@@ -395,8 +397,12 @@ public class CaneHarvester
         public void run() {
             if(!notInIsland && !emergency) {
                 try {
-                    stop();
                     rotating = true;
+                    process1 = false;
+                    process2 = false;
+                    process3 = false;
+                    process4 = false;
+                    stop();
                     enabled = false;
                     Thread.sleep(1000);
                     playerYaw = Math.round(Math.abs(playerYaw - 180));
@@ -462,6 +468,8 @@ public class CaneHarvester
             try{
                 KeyBinding.setKeyBindState(keybindS, true);
                 Thread.sleep(300);
+                if(process1)
+                mc.thePlayer.sendChatMessage("/setspawn");
                 KeyBinding.setKeyBindState(keybindS, false);
             }catch(Exception e) {
                 e.printStackTrace();
@@ -645,7 +653,7 @@ public class CaneHarvester
         process2 = false;
         process3 = false;
         process4 = false;
-        setspawned = false;
+        setcycled = false;
         shdBePressingKey = true;
         notInIsland = false;
         beforeX = mc.thePlayer.posX;
