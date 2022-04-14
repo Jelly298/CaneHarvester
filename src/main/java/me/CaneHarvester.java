@@ -196,7 +196,6 @@ public class CaneHarvester
         //script code
         if (enabled && mc.thePlayer != null && mc.theWorld != null) {
 
-            System.out.println(process1 + " " + process2 + " " + process3);
             //always
             mc.gameSettings.pauseOnLostFocus = false;
             mc.thePlayer.inventory.currentItem = 0;
@@ -240,10 +239,12 @@ public class CaneHarvester
                             Thread.sleep(200);
                             KeyBinding.setKeyBindState(keybindA, false);
                             if(Utils.getFrontBlock() == Blocks.air) {
+                                Utils.addCustomLog("restarting process 3");
                                 initialX = mc.thePlayer.posX;
                                 initialZ = mc.thePlayer.posZ;
                                 process3 = true;
                             } else{
+                                Utils.addCustomLog("restarting process 1");
                                 process1 = true;
                             }
 
@@ -362,14 +363,18 @@ public class CaneHarvester
     Runnable reSync = new Runnable() {
         @Override
         public void run() {
-            if(rotating) {
+            try {
+                if (rotating) {
+                    cycles = 0;
+                    return;
+                }
                 cycles = 0;
-                return;
+                Utils.addCustomChat("Resyncing...");
+                activateFailsafe();
+                ScheduleRunnable(WarpHub, 3, TimeUnit.SECONDS);
+            }catch(Exception e){
+
             }
-            cycles = 0;
-            Utils.addCustomChat("Resyncing...");
-            activateFailsafe();
-            ScheduleRunnable(WarpHub, 3, TimeUnit.SECONDS);
         }
     };
     Runnable checkChange = new Runnable() {
@@ -424,6 +429,7 @@ public class CaneHarvester
             if(!notInIsland && !emergency) {
                 process1 = !process1;
                 process2 = !process2;
+                Utils.addCustomLog("changing processes : " + "1:" + process1 + " 2:" + process2 );
                 set = false;
             }
         }
@@ -445,6 +451,7 @@ public class CaneHarvester
 
             if(!notInIsland && !emergency) {
 
+
                 process3 = !process3;
                 initialX = mc.thePlayer.posX;
                 initialZ = mc.thePlayer.posZ;
@@ -454,6 +461,8 @@ public class CaneHarvester
                 if(!process3){
                     ExecuteRunnable(changeMotion);
                     ScheduleRunnable(PressS, 200, TimeUnit.MILLISECONDS);
+                } else {
+                    Utils.addCustomLog("starting process 3");
                 }
 
 
@@ -468,7 +477,7 @@ public class CaneHarvester
             try{
                 KeyBinding.setKeyBindState(keybindS, true);
                 Thread.sleep(300);
-                if(process1)
+                if(process1 && !notInIsland && !emergency)
                 mc.thePlayer.sendChatMessage("/setspawn");
                 KeyBinding.setKeyBindState(keybindS, false);
             }catch(Exception e) {
