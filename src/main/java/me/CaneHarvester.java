@@ -1,5 +1,7 @@
 package me;
 
+import me.config.Config;
+import me.gui.GUI;
 import me.utils.Utils;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
@@ -65,7 +67,6 @@ public class CaneHarvester
     volatile static boolean set = false; //whether HAS CHANGED motion (1&2)
     volatile static boolean set3 = false; //same but motion 3
     static boolean rotating = false;
-    static boolean full = false;
 
 
     static double beforeX = 0;
@@ -122,8 +123,9 @@ public class CaneHarvester
     public void init(FMLInitializationEvent event)
     {
         ScheduleRunnable(checkPriceChange, 1, TimeUnit.SECONDS);
+        customKeyBinds[0] = new KeyBinding("Open GUI", Keyboard.KEY_RSHIFT, "CaneHarvester");
         customKeyBinds[1] = new KeyBinding("Toggle script", Keyboard.KEY_GRAVE, "CaneHarvester");
-        //ClientRegistry.registerKeyBinding(customKeyBinds[0]);
+        ClientRegistry.registerKeyBinding(customKeyBinds[0]);
         ClientRegistry.registerKeyBinding(customKeyBinds[1]);
 
     }
@@ -273,7 +275,8 @@ public class CaneHarvester
             double dz = Math.abs(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ);
             double dy = Math.abs(mc.thePlayer.posY - mc.thePlayer.lastTickPosY);
             boolean falling = blockIn == Blocks.air && dy != 0;
-            if(falling && !rotating){
+            if(falling && !rotating && !emergency && !notInIsland){
+                cycles = 0;
                 Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
                 ExecuteRunnable(changeLayer);
                 enabled = false;
@@ -291,10 +294,9 @@ public class CaneHarvester
 
                 }
             }
-            if(process3 && (Math.abs(mc.thePlayer.posX - initialX) > 5.5f || Math.abs(mc.thePlayer.posZ - initialZ) > 5.5f)){
+            if(process3 && (Math.abs(mc.thePlayer.posX - initialX) > 5.5f || Math.abs(mc.thePlayer.posZ - initialZ) > 5.5f) && !notInIsland && !emergency) {
 
-
-                if(!set3 && !rotating){
+                if (!set3 && !rotating) {
 
                     set3 = true;
                     ExecuteRunnable(Motion3);
@@ -303,8 +305,6 @@ public class CaneHarvester
 
                 }
             }
-            //System.out.println(Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !notInIsland && !emergency && !process4 && !process3)
-
 
             // Processes //
             if (process1 && !process3 && !process4) {
@@ -321,7 +321,6 @@ public class CaneHarvester
                         mc.thePlayer.sendChatMessage("/setspawn");
                         setspawned = true;
                         cycles++;
-
                     }
                 }
 
@@ -343,10 +342,10 @@ public class CaneHarvester
             }
 
             //resync
-            /*if(cycles == 4 && Config.resync && !full && !rotating)
+            if(cycles == 5 && Config.resync && !rotating)
                 ExecuteRunnable(reSync);
-            else if(cycles == 4 && Config.resync)
-                cycles = 0;*/
+            else if(cycles == 5 && Config.resync)
+                cycles = 0;
         } else{
             locked = false;
         }
@@ -361,14 +360,12 @@ public class CaneHarvester
     Runnable reSync = new Runnable() {
         @Override
         public void run() {
-            if(full||rotating) {
+            if(rotating) {
                 cycles = 0;
                 return;
             }
-
             cycles = 0;
-            mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.GREEN +
-                    "[Farm Helper] : " + EnumChatFormatting.DARK_GREEN + "Resyncing.. "));
+            Utils.addCustomChat("Resyncing...");
             activateFailsafe();
             ScheduleRunnable(WarpHub, 3, TimeUnit.SECONDS);
         }
@@ -565,6 +562,10 @@ public class CaneHarvester
 
                 toggle();
             }
+            if(customKeyBinds[0].isPressed()){
+                mc.displayGuiScreen(new GUI());
+            }
+
         }
 
 
@@ -602,10 +603,7 @@ public class CaneHarvester
         if(enabled){
             Utils.addCustomChat("Stopped script");
             stop();
-        } else {
-
         }
-
         enabled = !enabled;
         openedGUI = false;
     }
@@ -658,6 +656,6 @@ public class CaneHarvester
         set3 = false;
         cycles = 0;
         rotating = false;
-        full = false;
+
     }
 }
