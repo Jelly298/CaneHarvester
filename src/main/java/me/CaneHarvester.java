@@ -238,7 +238,7 @@ public class CaneHarvester
                             KeyBinding.setKeyBindState(keybindA, true);
                             Thread.sleep(200);
                             KeyBinding.setKeyBindState(keybindA, false);
-                            if(Utils.getFrontBlock() == Blocks.air) {
+                            if(Utils.getFrontBlock().equals(Blocks.air)) {
                                 Utils.addCustomLog("restarting process 3");
                                 initialX = mc.thePlayer.posX;
                                 initialZ = mc.thePlayer.posZ;
