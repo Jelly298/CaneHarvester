@@ -179,7 +179,7 @@ public class Utils {
     }
 
     public static boolean isWalkable(Block block) {
-        return block == Blocks.air || block == Blocks.water || block == Blocks.flowing_water;
+        return block == Blocks.air || block == Blocks.water || block == Blocks.flowing_water || block == Blocks.reeds;
     }
 
     // 0, 0 = initial block

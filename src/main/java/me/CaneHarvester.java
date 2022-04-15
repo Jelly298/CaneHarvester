@@ -203,6 +203,7 @@ public class CaneHarvester {
             if (!inFailsafe) {
                 mc.thePlayer.rotationPitch = 0;
                 Utils.hardRotate(playerYaw);
+                KeyBinding.setKeyBindState(keybindAttack, true);
             }
             //INITIALIZE
             if (!locked) {
