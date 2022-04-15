@@ -98,7 +98,7 @@ public class CaneHarvester {
     enum direction {
         RIGHT,
         LEFT,
-        NONE
+        NONE //at the backmost lane of the farm
     }
 
     @EventHandler
@@ -275,19 +275,27 @@ public class CaneHarvester {
 
             //states
             if(dy == 0 && !inFailsafe && !stuck){
-                if(!walkingForward) {
+                if(!walkingForward) { //Normal states
                     KeyBinding.setKeyBindState(keyBindSneak, false);
                     if (currentDirection.equals(direction.RIGHT))
                         KeyBinding.setKeyBindState(keybindD, true);
                     else if(currentDirection.equals(direction.LEFT))
                         KeyBinding.setKeyBindState(keybindA, true);
-                } else{
-                    KeyBinding.setKeyBindState(keyBindSneak, true);
+                } else{ // when walking forward
+                    //hole drop fix (prevent sneaking at the hole)
+                    if(!Utils.isWalkable(Utils.getFrontDownBlock()))
+                        KeyBinding.setKeyBindState(keyBindSneak, true);
+                    else {
+                        KeyBinding.setKeyBindState(keyBindSneak, false);
+                    }
+
+                    //unleash keys
                     if(lastLaneDirection.equals(direction.LEFT))
                         updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), mc.gameSettings.keyBindLeft.isKeyDown(),  false);
                     else
                         updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), false, mc.gameSettings.keyBindRight.isKeyDown());
 
+                    //push keys so the next tick it will unleash
                     while(!pushedOff && !lastLaneDirection.equals(direction.NONE))
                     {
                         if (lastLaneDirection.equals(direction.LEFT)) {
@@ -306,7 +314,7 @@ public class CaneHarvester {
 
             //change to walk forward
             if (Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !inFailsafe  && !rotating) {
-                if (shouldWalkForward() && !walkingForward) {
+                if (shouldWalkForward() && !walkingForward && (initialX != mc.thePlayer.posX || initialZ != mc.thePlayer.posZ)) {
                     updateKeybinds(true, false, false, false);
                     walkingForward = true;
                     Utils.addCustomLog("Walking forward");
@@ -316,6 +324,7 @@ public class CaneHarvester {
                     initialZ = mc.thePlayer.posZ;
                 }
             }
+
             //chagnge back to left/right
             if((Math.abs(initialX - mc.thePlayer.posX) > 5.75f || Math.abs(initialZ - mc.thePlayer.posZ) > 5.75f) && walkingForward) {
                 if(lastLaneDirection == direction.LEFT) {

@@ -154,6 +154,12 @@ public class Utils {
                 new BlockPos(mc.thePlayer.getLookVec().xCoord + mc.thePlayer.posX, mc.thePlayer.posY,
                         mc.thePlayer.getLookVec().zCoord + mc.thePlayer.posZ)).getBlock());
     }
+    public static Block getFrontDownBlock(){
+        Minecraft mc = Minecraft.getMinecraft();
+        return (mc.theWorld.getBlockState(
+                new BlockPos(mc.thePlayer.getLookVec().xCoord + mc.thePlayer.posX, mc.thePlayer.posY - 1,
+                        mc.thePlayer.getLookVec().zCoord + mc.thePlayer.posZ)).getBlock());
+    }
     public static Block getBackBlock(){
         Minecraft mc = Minecraft.getMinecraft();
         return (mc.theWorld.getBlockState(
