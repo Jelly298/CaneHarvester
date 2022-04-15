@@ -4,6 +4,7 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.init.Blocks;
 import net.minecraft.inventory.Slot;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
@@ -135,18 +136,6 @@ public class Utils {
         Random r = new Random();
         return r.nextInt(upperbound);
     }
-    public static Block getFrontBlock(){
-        Minecraft mc = Minecraft.getMinecraft();
-        return (mc.theWorld.getBlockState(
-                new BlockPos(mc.thePlayer.getLookVec().xCoord + mc.thePlayer.posX, mc.thePlayer.posY,
-                        mc.thePlayer.getLookVec().zCoord + mc.thePlayer.posZ)).getBlock());
-    }
-    public static Block getBackBlock(){
-        Minecraft mc = Minecraft.getMinecraft();
-        return (mc.theWorld.getBlockState(
-                new BlockPos(mc.thePlayer.getLookVec().xCoord * -1 + mc.thePlayer.posX, mc.thePlayer.posY,
-                        mc.thePlayer.getLookVec().zCoord * -1 + mc.thePlayer.posZ)).getBlock());
-    }
     public static void addCustomChat(String message, EnumChatFormatting color){
         Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_PURPLE +
                 "CANE_HARVESTER " + color + message));
@@ -159,9 +148,53 @@ public class Utils {
         Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.LIGHT_PURPLE +
                 "CANE_HARVESTER_LOG " + EnumChatFormatting.GRAY + message));
     }
+    public static Block getFrontBlock(){
+        Minecraft mc = Minecraft.getMinecraft();
+        return (mc.theWorld.getBlockState(
+                new BlockPos(mc.thePlayer.getLookVec().xCoord + mc.thePlayer.posX, mc.thePlayer.posY,
+                        mc.thePlayer.getLookVec().zCoord + mc.thePlayer.posZ)).getBlock());
+    }
+    public static Block getBackBlock(){
+        Minecraft mc = Minecraft.getMinecraft();
+        return (mc.theWorld.getBlockState(
+                new BlockPos(mc.thePlayer.getLookVec().xCoord * -1 + mc.thePlayer.posX, mc.thePlayer.posY,
+                        mc.thePlayer.getLookVec().zCoord * -1 + mc.thePlayer.posZ)).getBlock());
+    }
+    public static Block getRightBlock(){
+        Minecraft mc = Minecraft.getMinecraft();
+        return (mc.theWorld.getBlockState(
+                new BlockPos(mc.thePlayer.getLookVec().zCoord * -1 + mc.thePlayer.posX, mc.thePlayer.posY,
+                        mc.thePlayer.getLookVec().xCoord + mc.thePlayer.posZ)).getBlock());
+    }
+
+    public static Block getLeftBlock(){
+        Minecraft mc = Minecraft.getMinecraft();
+        return (mc.theWorld.getBlockState(
+                new BlockPos(mc.thePlayer.getLookVec().zCoord + mc.thePlayer.posX, mc.thePlayer.posY,
+                        mc.thePlayer.getLookVec().xCoord * -1 + mc.thePlayer.posZ)).getBlock());
+    }
+
     public static double roundTo2DecimalPlaces(double d){
         return Math.floor(d * 100) / 100;
     }
+
+    public static boolean isWalkable(Block block) {
+        return block == Blocks.air || block == Blocks.water || block == Blocks.flowing_water;
+    }
+
+    // 0, 0 = initial block
+    public static Block getBlockAround(int a, int b){
+        Minecraft mc = Minecraft.getMinecraft();
+        double X = mc.thePlayer.posX;
+        double Y = mc.thePlayer.posY;
+        double Z = mc.thePlayer.posZ;
+
+        return (mc.theWorld.getBlockState(
+                new BlockPos(mc.thePlayer.getLookVec().zCoord * -1 * a + mc.thePlayer.getLookVec().xCoord * b + X, Y,
+                        mc.thePlayer.getLookVec().xCoord * a + mc.thePlayer.getLookVec().zCoord * b + Z)).getBlock());
+
+    }
+
 
 
 

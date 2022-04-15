@@ -7,11 +7,8 @@ import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiDisconnected;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.init.Blocks;
-import net.minecraft.inventory.ContainerChest;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.*;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
@@ -34,13 +31,13 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Mod(modid = CaneHarvester.MODID, version = CaneHarvester.VERSION)
-public class CaneHarvester
-{
+public class CaneHarvester {
     public static final String MODID = "nwmath";
     public static final String NAME = "Farm Helper";
     public static final String VERSION = "1.0";
@@ -50,24 +47,19 @@ public class CaneHarvester
     Minecraft mc = Minecraft.getMinecraft();
 
 
-
     public static boolean enabled = false;
 
 
-
     boolean locked = false;
-    volatile static boolean process1 = false;
-    volatile static boolean process2 = false;
-    volatile static boolean process3 = false;
-    volatile static boolean process4 = false;
+    public static direction lastLaneDirection;
+    public static direction currentDirection;
+    public static boolean inFailsafe;
+    public static boolean walkingForward;
+    public static boolean pushedOff;
     volatile static boolean error = false;
-    volatile static boolean emergency = false;
     volatile static boolean setcycled = false;
-    volatile static boolean setAntiStuck = false;
-    volatile static boolean set = false; //whether HAS CHANGED motion (1&2)
-    volatile static boolean set3 = false; //same but motion 3
+    volatile static boolean stuck = false;
     volatile static boolean rotating = false;
-
 
 
     volatile static double beforeX = 0;
@@ -79,8 +71,6 @@ public class CaneHarvester
     volatile static double initialX = 0;
     volatile static double initialZ = 0;
 
-    volatile boolean notInIsland = false;
-    volatile boolean shdBePressingKey = true;
     public static boolean openedGUI = false;
 
     public int keybindA = mc.gameSettings.keyBindLeft.getKeyCode();
@@ -104,10 +94,14 @@ public class CaneHarvester
     private static Logger logger;
 
 
+    enum direction {
+        RIGHT,
+        LEFT,
+        NONE
+    }
 
     @EventHandler
-    public void preInit(FMLPreInitializationEvent event)
-    {
+    public void preInit(FMLPreInitializationEvent event) {
 
     }
 
@@ -119,11 +113,8 @@ public class CaneHarvester
     }
 
 
-
     @EventHandler
-    public void init(FMLInitializationEvent event)
-    {
-        ScheduleRunnable(checkPriceChange, 1, TimeUnit.SECONDS);
+    public void init(FMLInitializationEvent event) {
         customKeyBinds[0] = new KeyBinding("Open GUI", Keyboard.KEY_RSHIFT, "CaneHarvester");
         customKeyBinds[1] = new KeyBinding("Toggle script", Keyboard.KEY_GRAVE, "CaneHarvester");
         ClientRegistry.registerKeyBinding(customKeyBinds[0]);
@@ -141,21 +132,21 @@ public class CaneHarvester
 
 
     @SubscribeEvent
-    public void onMessageReceived(ClientChatReceivedEvent event){
+    public void onMessageReceived(ClientChatReceivedEvent event) {
 
-        if(event.message.getFormattedText().contains("You were spawned in Limbo") && !notInIsland && enabled) {
+        if (event.message.getFormattedText().contains("You were spawned in Limbo") && !inFailsafe && enabled) {
             activateFailsafe();
             ScheduleRunnable(LeaveSBIsand, 8, TimeUnit.SECONDS);
 
         }
-        if((event.message.getFormattedText().contains("Sending to server") && !notInIsland && enabled)){
+        if ((event.message.getFormattedText().contains("Sending to server") && !inFailsafe && enabled)) {
             activateFailsafe();
             ScheduleRunnable(WarpHome, 10, TimeUnit.SECONDS);
         }
-        if((event.message.getFormattedText().contains("DYNAMIC") || (event.message.getFormattedText().contains("Couldn't warp you")) && notInIsland)){
+        if ((event.message.getFormattedText().contains("DYNAMIC") || (event.message.getFormattedText().contains("Couldn't warp you")) && inFailsafe)) {
             error = true;
         }
-        if((event.message.getFormattedText().contains("SkyBlock Lobby") && !notInIsland && enabled)){
+        if ((event.message.getFormattedText().contains("SkyBlock Lobby") && !inFailsafe && enabled)) {
             activateFailsafe();
             ScheduleRunnable(LeaveSBIsand, 10, TimeUnit.SECONDS);
         }
@@ -165,8 +156,7 @@ public class CaneHarvester
 
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
-    public void render(RenderGameOverlayEvent event)
-    {
+    public void render(RenderGameOverlayEvent event) {
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
             mc.fontRendererObj.drawString("Angle : " + playerYaw, 4, 4, -1);
             mc.fontRendererObj.drawString("Minecraft yaw : " + mc.thePlayer.rotationYaw, 4, 16, -1);
@@ -174,12 +164,11 @@ public class CaneHarvester
             mc.fontRendererObj.drawString("KeyBindS : " + (mc.gameSettings.keyBindBack.isKeyDown() ? "Pressed" : "Not pressed"), 4, 40, -1);
             mc.fontRendererObj.drawString("KeyBindA : " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, 52, -1);
             mc.fontRendererObj.drawString("KeyBindD : " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, 64, -1);
-            mc.fontRendererObj.drawString("Front block : " + Utils.getFrontBlock(), 4, 76, -1);
+            mc.fontRendererObj.drawString("Walking forward : " + walkingForward, 4, 76, -1);
 
         }
 
     }
-
 
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -187,50 +176,59 @@ public class CaneHarvester
 
         if (event.phase != TickEvent.Phase.START) return;
 
+
         // profit calculator && angle caculation
-        if( mc.thePlayer != null && mc.theWorld != null){
-            if(!rotating)
-                playerYaw = Math.round(Utils.get360RotationYaw()/90) < 4 ? Math.round(Utils.get360RotationYaw()/90) * 90 : 0;
+        if (mc.thePlayer != null && mc.theWorld != null) {
+            if (!rotating)
+                playerYaw = Math.round(Utils.get360RotationYaw() / 90) < 4 ? Math.round(Utils.get360RotationYaw() / 90) * 90 : 0;
+
         }
 
         //script code
         if (enabled && mc.thePlayer != null && mc.theWorld != null) {
 
             //always
+            Block blockIn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock();
+
+            double dx = Math.abs(mc.thePlayer.posX - mc.thePlayer.lastTickPosX);
+            double dz = Math.abs(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ);
+            double dy = Math.abs(mc.thePlayer.posY - mc.thePlayer.lastTickPosY);
+            boolean falling = blockIn == Blocks.air && dy != 0;
+
             mc.gameSettings.pauseOnLostFocus = false;
             mc.thePlayer.inventory.currentItem = 0;
             mc.gameSettings.gammaSetting = 100;
-            if(!emergency && !process4) {
-                KeyBinding.setKeyBindState(keybindW, false);
-            }
-            if (!shdBePressingKey) {
-                KeyBinding.setKeyBindState(keybindA, false);
-                KeyBinding.setKeyBindState(keybindD, false);
-            }
+
             //angles (locked)
-            if(!emergency && !notInIsland) {
+            if (!inFailsafe) {
                 mc.thePlayer.rotationPitch = 0;
                 Utils.hardRotate(playerYaw);
             }
             //INITIALIZE
             if (!locked) {
-                KeyBinding.setKeyBindState(keybindA, false);
-                KeyBinding.setKeyBindState(keybindD, false);
+                initializeVaraibles();
+                Utils.addCustomLog("Going : " + calculateDirection());
                 locked = true;
-                initialize();
                 ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
             }
+
+            if (falling && !rotating && !inFailsafe && dx == 0 && dz == 0) {
+                cycles = 0;
+                Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
+                ExecuteRunnable(changeLayer);
+                enabled = false;
+
+            }
             //antistuck
-            if(deltaX < 0.8d && deltaZ < 0.8d && deltaY < 0.0001d && !notInIsland && !emergency && !setAntiStuck){
+            if (deltaX < 0.5d && deltaZ < 0.5d && deltaY < 0.0001d && !inFailsafe && !stuck) {
                 Utils.addCustomChat("Detected stuck");
-                setAntiStuck = true;
-                process4 = true;
-                stop();
+                stuck = true;
+
+                unpressKeybinds();
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        try{
-                            process3 = false;
+                        try {
                             Thread.sleep(100);
                             KeyBinding.setKeyBindState(keybindD, true);
                             Thread.sleep(200);
@@ -238,20 +236,24 @@ public class CaneHarvester
                             KeyBinding.setKeyBindState(keybindA, true);
                             Thread.sleep(200);
                             KeyBinding.setKeyBindState(keybindA, false);
-                            if(Utils.getFrontBlock().equals(Blocks.air)) {
-                                Utils.addCustomLog("restarting process 3");
+                            if (shouldWalkForward()) {
+                                Utils.addCustomLog("Restarting : Going forward");
+                                lastLaneDirection = calculateDirection().equals(direction.LEFT) ? direction.RIGHT : direction.LEFT;
+                                walkingForward = true;
                                 initialX = mc.thePlayer.posX;
                                 initialZ = mc.thePlayer.posZ;
-                                process3 = true;
-                            } else{
-                                Utils.addCustomLog("restarting process 1");
-                                process1 = true;
+
+                            } else {
+                                currentDirection = direction.RIGHT;
+                                lastLaneDirection = direction.LEFT;
+                                walkingForward = false;
+                                Utils.addCustomLog("Restarting : Going right");
                             }
+                            stuck = false;
+                            deltaX = 10000;
+                            deltaZ = 10000;
 
-                            ExecuteRunnable(stopAntistuck);
-
-                            //exec
-                        }catch(Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
@@ -261,98 +263,83 @@ public class CaneHarvester
 
             //bedrock failsafe
             Block blockStandingOn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)).getBlock();
-            if(blockStandingOn == Blocks.bedrock && !emergency) {
+            if (blockStandingOn == Blocks.bedrock) {
                 KeyBinding.setKeyBindState(keybindAttack, false);
-                process1 = false;
-                process2 = false;
-                process3 = false;
-                process4 = false;
+
                 ScheduleRunnable(EMERGENCY, 200, TimeUnit.MILLISECONDS);
-                emergency = true;
+                inFailsafe = true;
 
             }
 
-            //change motion
-            Block blockIn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock();
+            //states
+            if(dy == 0 && !inFailsafe && !stuck){
+                if(!walkingForward) {
+                    if (currentDirection.equals(direction.RIGHT))
+                        KeyBinding.setKeyBindState(keybindD, true);
+                    else if(currentDirection.equals(direction.LEFT))
+                        KeyBinding.setKeyBindState(keybindA, true);
+                } else{
+                    if(lastLaneDirection.equals(direction.LEFT))
+                        updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), mc.gameSettings.keyBindLeft.isKeyDown(),  false);
+                    else
+                        updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), false, mc.gameSettings.keyBindRight.isKeyDown());
 
-            double dx = Math.abs(mc.thePlayer.posX - mc.thePlayer.lastTickPosX);
-            double dz = Math.abs(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ);
-            double dy = Math.abs(mc.thePlayer.posY - mc.thePlayer.lastTickPosY);
-            boolean falling = blockIn == Blocks.air && dy != 0;
-            if(falling && !rotating && !emergency && !notInIsland && dx == 0 && dz == 0){
-                cycles = 0;
-                Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
-                ExecuteRunnable(changeLayer);
-                enabled = false;
-
-            }
-            if (Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !notInIsland && !emergency && !process4 && !process3){
-
-                if(!set3 && (Utils.roundTo2DecimalPlaces(mc.thePlayer.posZ) != Utils.roundTo2DecimalPlaces(initialZ) ||
-                        Utils.roundTo2DecimalPlaces(mc.thePlayer.posX) != Utils.roundTo2DecimalPlaces(initialX)) && !rotating){
-
-                    set3 = true;
-                    ExecuteRunnable(Motion3);
-                    stop();
-                    KeyBinding.onTick(keybindS);
-
-                }
-            }
-            if(process3 && (Math.abs(mc.thePlayer.posX - initialX) > 5.5f || Math.abs(mc.thePlayer.posZ - initialZ) > 5.5f) && !notInIsland && !emergency) {
-
-                if (!set3 && !rotating) {
-
-                    set3 = true;
-                    ExecuteRunnable(Motion3);
-                    stop();
-                    KeyBinding.onTick(keybindS);
-
-                }
-            }
-
-            // Processes //
-            if (process1 && !process3 && !process4) {
-                if (shdBePressingKey) {
-
-                    KeyBinding.setKeyBindState(keybindAttack, true);
-                    error = false;
-
-                    KeyBinding.setKeyBindState(keybindD, true);
-                    KeyBinding.setKeyBindState(keybindA, false);
-                    KeyBinding.setKeyBindState(keybindW, false);
-                    if(!setcycled)
+                    while(!pushedOff && !lastLaneDirection.equals(direction.NONE))
                     {
-                        setcycled = true;
-                        cycles++;
+                        if (lastLaneDirection.equals(direction.LEFT)) {
+                            Utils.addCustomLog("Bouncing to the right");
+                            updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), mc.gameSettings.keyBindLeft.isKeyDown(), true);
+                        } else {
+                            Utils.addCustomLog("Bouncing to the left");
+                            updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), true, mc.gameSettings.keyBindRight.isKeyDown());
+                        }
+                        pushedOff = true;
                     }
-                }
-
-            } else if (process2 && !process3 && !process4) {
-                setcycled = false;
-                if (shdBePressingKey) {
-
-                    KeyBinding.setKeyBindState(keybindAttack, true);
-                    KeyBinding.setKeyBindState(keybindA, true);
-                    KeyBinding.setKeyBindState(keybindD, false);
-                    KeyBinding.setKeyBindState(keybindW, false);
-
-                }
-
-            }
-            if(process3 && !process4){
-                if (shdBePressingKey)
                     KeyBinding.setKeyBindState(keybindW, true);
+                }
             }
+
+
+            //change to walk forward
+            if (Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !inFailsafe  && !rotating) {
+                if (shouldWalkForward() && !walkingForward) {
+                    updateKeybinds(true, false, false, false);
+                    walkingForward = true;
+                    Utils.addCustomLog("Walking forward");
+
+                    pushedOff = false;
+                    initialX = mc.thePlayer.posX;
+                    initialZ = mc.thePlayer.posZ;
+                }
+            }
+            //chagnge back to left/right
+            if((Math.abs(initialX - mc.thePlayer.posX) > 5.6f || Math.abs(initialZ - mc.thePlayer.posZ) > 5.6f) && walkingForward) {
+                if(lastLaneDirection == direction.LEFT) {
+                    //set last lane dir
+                    currentDirection = direction.RIGHT;
+                    lastLaneDirection = direction.RIGHT;
+                    updateKeybinds(false, false, false, true);
+                }
+                else {
+                    currentDirection = direction.LEFT;
+                    lastLaneDirection = direction.LEFT;
+                    updateKeybinds(false, false, true, false);
+                }
+                Utils.addCustomLog("Changing motion : Going " + currentDirection);
+                ScheduleRunnable(PressS, 200, TimeUnit.MILLISECONDS);
+                walkingForward = false;
+            }
+
+
 
             //resync
-            if(cycles == 5 && Config.resync && !rotating)
+            if (cycles == 6 && Config.resync && !rotating)
                 ExecuteRunnable(reSync);
-            else if(cycles == 5 && Config.resync)
+            else if (cycles == 6 && Config.resync)
                 cycles = 0;
-        } else{
+        } else {
             locked = false;
         }
-
 
 
     }
@@ -364,24 +351,26 @@ public class CaneHarvester
         @Override
         public void run() {
             try {
+                cycles = 0;
                 if (rotating) {
-                    cycles = 0;
                     return;
                 }
-                cycles = 0;
                 Utils.addCustomChat("Resyncing...");
+                Thread.sleep(350);
                 activateFailsafe();
+                Thread.sleep(650);
                 ScheduleRunnable(WarpHub, 3, TimeUnit.SECONDS);
-            }catch(Exception e){
+            } catch (Exception e) {
 
             }
         }
     };
+
     Runnable checkChange = new Runnable() {
         @Override
         public void run() {
 
-            if(!notInIsland && !emergency && enabled) {
+            if (!inFailsafe && enabled) {
                 deltaX = Math.abs(mc.thePlayer.posX - beforeX);
                 deltaZ = Math.abs(mc.thePlayer.posZ - beforeZ);
                 deltaY = Math.abs(mc.thePlayer.posY - beforeY);
@@ -390,7 +379,7 @@ public class CaneHarvester
                 beforeZ = mc.thePlayer.posZ;
                 beforeY = mc.thePlayer.posY;
 
-                ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
+                ScheduleRunnable(checkChange, 5, TimeUnit.SECONDS);
 
             }
 
@@ -400,87 +389,43 @@ public class CaneHarvester
     Runnable changeLayer = new Runnable() {
         @Override
         public void run() {
-            if(!notInIsland && !emergency) {
+            if (!inFailsafe) {
                 try {
                     rotating = true;
-                    process1 = false;
-                    process2 = false;
-                    process3 = false;
-                    process4 = false;
-                    stop();
+
+                    unpressKeybinds();
                     enabled = false;
                     Thread.sleep(1000);
                     playerYaw = Math.round(Math.abs(playerYaw - 180));
                     Utils.smoothRotateClockwise(180);
                     Thread.sleep(2000);
                     rotating = false;
-                    initialize();
+                    initializeVaraibles();
                     enabled = true;
-                }catch(Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
     };
 
-    Runnable changeMotion = new Runnable() {
-        @Override
-        public void run() {
-            if(!notInIsland && !emergency) {
-                process1 = !process1;
-                process2 = !process2;
-                Utils.addCustomLog("changing processes : " + "1:" + process1 + " 2:" + process2 );
-                set = false;
-            }
-        }
-    };
-
-    Runnable stopAntistuck = new Runnable() {
-        @Override
-        public void run() {
-            deltaX = 10000;
-            deltaZ = 10000;
-            process4 = false;
-            setAntiStuck = false;
-        }
-    };
-
-    Runnable Motion3 = new Runnable() {
-        @Override
-        public void run() {
-
-            if(!notInIsland && !emergency) {
 
 
-                process3 = !process3;
-                initialX = mc.thePlayer.posX;
-                initialZ = mc.thePlayer.posZ;
-
-                set3 = false;
-
-                if(!process3){
-                    ExecuteRunnable(changeMotion);
-                    ScheduleRunnable(PressS, 200, TimeUnit.MILLISECONDS);
-                } else {
-                    Utils.addCustomLog("starting process 3");
-                }
-
-
-
-            }
-        }
-    };
 
     Runnable PressS = new Runnable() {
         @Override
         public void run() {
-            try{
-                KeyBinding.setKeyBindState(keybindS, true);
+            if(stuck || inFailsafe || walkingForward)
+                return;
+            try {
+
+                cycles ++;
+                Utils.addCustomLog("Pressing S");
+                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
                 Thread.sleep(300);
-                if(process1 && !notInIsland && !emergency)
                 mc.thePlayer.sendChatMessage("/setspawn");
-                KeyBinding.setKeyBindState(keybindS, false);
-            }catch(Exception e) {
+                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
+            } catch (Exception e) {
                 e.printStackTrace();
 
             }
@@ -519,12 +464,11 @@ public class CaneHarvester
     };
 
 
-
     Runnable afterRejoin1 = new Runnable() {
         @Override
         public void run() {
             KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), true);
-            if(!error) {
+            if (!error) {
                 ScheduleRunnable(afterRejoin2, 1, TimeUnit.SECONDS);
             } else {
                 ScheduleRunnable(WarpHome, 20, TimeUnit.SECONDS);
@@ -539,49 +483,38 @@ public class CaneHarvester
 
             KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), false);
 
-            initialize();
+            initializeVaraibles();
 
             mc.inGameHasFocus = true;
             mouseHelper.grabMouseCursor();
-            mc.displayGuiScreen((GuiScreen)null);
+            mc.displayGuiScreen((GuiScreen) null);
             Field f = null;
-            f = FieldUtils.getDeclaredField(mc.getClass(), "leftClickCounter",true);
+            f = FieldUtils.getDeclaredField(mc.getClass(), "leftClickCounter", true);
             try {
                 f.set(mc, 10000);
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
             ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
         }
     };
-    Runnable checkPriceChange = new Runnable() {
-        @Override
-        public void run() {
 
-            if(!(prevMoney == -999) && (totalMoney - prevMoney >= 0)) {
-                moneyper10sec = totalMoney - prevMoney;
-            }
-
-            prevMoney = totalMoney;
-
-            ScheduleRunnable(checkPriceChange, 10, TimeUnit.SECONDS);
-        }
-    };
 
     @SubscribeEvent
-    public void OnKeyPress(InputEvent.KeyInputEvent event){
+    public void OnKeyPress(InputEvent.KeyInputEvent event) {
 
-        if(!rotating) {
+        if (!rotating) {
             if (customKeyBinds[1].isPressed()) {
                 if (!enabled)
                     Utils.addCustomChat("Starting script");
 
                 toggle();
             }
-            if(customKeyBinds[0].isPressed()){
+            if (customKeyBinds[0].isPressed()) {
                 mc.displayGuiScreen(new GUI());
             }
+
 
         }
 
@@ -614,65 +547,97 @@ public class CaneHarvester
         }
     };
 
-    void toggle(){
+    void toggle() {
 
         mc.thePlayer.closeScreen();
-        if(enabled){
+        if (enabled) {
             Utils.addCustomChat("Stopped script");
-            stop();
+            unpressKeybinds();
         }
         enabled = !enabled;
         openedGUI = false;
+        currentDirection = calculateDirection();
     }
-    void stop(){
-        net.minecraft.client.settings.KeyBinding.setKeyBindState(keybindA, false);
-        net.minecraft.client.settings.KeyBinding.setKeyBindState(keybindW, false);
-        net.minecraft.client.settings.KeyBinding.setKeyBindState(keybindD, false);
-        net.minecraft.client.settings.KeyBinding.setKeyBindState(keybindS, false);
-        net.minecraft.client.settings.KeyBinding.setKeyBindState(keybindAttack, false);
-    }
-    void activateFailsafe(){
-        shdBePressingKey = false;
-        notInIsland = true;
-        KeyBinding.setKeyBindState(keybindAttack, false);
-        process1 = false;
-        process2 = false;
-        process3 = false;
-        process4 = false;
 
+    void unpressKeybinds() {
+        updateKeybinds(false, false, false, false);
     }
-    void ScheduleRunnable(Runnable r, int delay, TimeUnit tu){
+
+    void activateFailsafe() {
+        inFailsafe = true;
+        stuck = false;
+        walkingForward = false;
+        unpressKeybinds();
+    }
+
+    void ScheduleRunnable(Runnable r, int delay, TimeUnit tu) {
         ScheduledExecutorService eTemp = Executors.newScheduledThreadPool(1);
         eTemp.schedule(r, delay, tu);
         eTemp.shutdown();
     }
-    void ExecuteRunnable(Runnable r){
+
+    void ExecuteRunnable(Runnable r) {
         ScheduledExecutorService eTemp = Executors.newScheduledThreadPool(1);
         eTemp.execute(r);
         eTemp.shutdown();
     }
 
-    void initialize(){
+    void initializeVaraibles() {
         deltaX = 10000;
         deltaZ = 10000;
         deltaY = 0;
 
-
-        process1 = true;
-        process2 = false;
-        process3 = false;
-        process4 = false;
+        pushedOff = false;
+        lastLaneDirection = calculateDirection();
+        currentDirection = calculateDirection();
         setcycled = false;
-        shdBePressingKey = true;
-        notInIsland = false;
+        inFailsafe = false;
+        walkingForward = false;
         beforeX = mc.thePlayer.posX;
         beforeZ = mc.thePlayer.posZ;
         initialX = mc.thePlayer.posX;
         initialZ = mc.thePlayer.posZ;
-        set = false;
-        set3 = false;
+
+
         cycles = 0;
         rotating = false;
 
+    }
+
+    void updateKeybinds(boolean forward, boolean backward, boolean left, boolean right) {
+
+        KeyBinding.setKeyBindState(keybindW ,forward);
+        KeyBinding.setKeyBindState(keybindA ,left);
+        KeyBinding.setKeyBindState(keybindD ,right);
+        KeyBinding.setKeyBindState(keybindS ,backward);
+
+
+    }
+
+    direction calculateDirection() {
+        ArrayList<Integer> unwalkableBlocks = new ArrayList<Integer>();
+        for (int i = -5; i < 5; i++) {
+            if (!Utils.isWalkable(Utils.getBlockAround(i, 0))) {
+                unwalkableBlocks.add(i);
+            }
+        }
+        if(shouldWalkForward())
+            return direction.NONE;
+        if(unwalkableBlocks.size() == 0)
+            return direction.RIGHT;
+        if (unwalkableBlocks.size() > 1)
+            return direction.NONE;
+        else if (unwalkableBlocks.get(0) > 0)
+            return direction.LEFT;
+        else
+            return direction.RIGHT;
+    }
+
+    boolean shouldWalkForward(){
+        return (Utils.isWalkable(Utils.getBackBlock()) && Utils.isWalkable(Utils.getFrontBlock())) ||
+                (!Utils.isWalkable(Utils.getBackBlock()) && !Utils.isWalkable(Utils.getLeftBlock())) ||
+                (!Utils.isWalkable(Utils.getBackBlock()) && !Utils.isWalkable(Utils.getRightBlock())) ||
+                (!Utils.isWalkable(Utils.getFrontBlock()) && !Utils.isWalkable(Utils.getRightBlock())) ||
+                (!Utils.isWalkable(Utils.getFrontBlock()) && !Utils.isWalkable(Utils.getLeftBlock()));
     }
 }
