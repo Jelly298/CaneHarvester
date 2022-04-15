@@ -79,6 +79,7 @@ public class CaneHarvester {
     public int keybindS = mc.gameSettings.keyBindBack.getKeyCode();
     public int keybindAttack = mc.gameSettings.keyBindAttack.getKeyCode();
     public int keybindUseItem = mc.gameSettings.keyBindUseItem.getKeyCode();
+    public int keyBindSneak = mc.gameSettings.keyBindSneak.getKeyCode();
 
     static KeyBinding[] customKeyBinds = new KeyBinding[2];
 
@@ -275,11 +276,13 @@ public class CaneHarvester {
             //states
             if(dy == 0 && !inFailsafe && !stuck){
                 if(!walkingForward) {
+                    KeyBinding.setKeyBindState(keyBindSneak, false);
                     if (currentDirection.equals(direction.RIGHT))
                         KeyBinding.setKeyBindState(keybindD, true);
                     else if(currentDirection.equals(direction.LEFT))
                         KeyBinding.setKeyBindState(keybindA, true);
                 } else{
+                    KeyBinding.setKeyBindState(keyBindSneak, true);
                     if(lastLaneDirection.equals(direction.LEFT))
                         updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), mc.gameSettings.keyBindLeft.isKeyDown(),  false);
                     else
@@ -314,7 +317,7 @@ public class CaneHarvester {
                 }
             }
             //chagnge back to left/right
-            if((Math.abs(initialX - mc.thePlayer.posX) > 5.6f || Math.abs(initialZ - mc.thePlayer.posZ) > 5.6f) && walkingForward) {
+            if((Math.abs(initialX - mc.thePlayer.posX) > 5.75f || Math.abs(initialZ - mc.thePlayer.posZ) > 5.75f) && walkingForward) {
                 if(lastLaneDirection == direction.LEFT) {
                     //set last lane dir
                     currentDirection = direction.RIGHT;
@@ -553,6 +556,8 @@ public class CaneHarvester {
         mc.thePlayer.closeScreen();
         if (enabled) {
             Utils.addCustomChat("Stopped script");
+            KeyBinding.setKeyBindState(keybindAttack, false);
+            KeyBinding.setKeyBindState(keyBindSneak, false);
             unpressKeybinds();
         }
         enabled = !enabled;
@@ -622,12 +627,12 @@ public class CaneHarvester {
                 unwalkableBlocks.add(i);
             }
         }
-        if(shouldWalkForward())
-            return direction.NONE;
+
         if(unwalkableBlocks.size() == 0)
             return direction.RIGHT;
-        if (unwalkableBlocks.size() > 1)
+        else if (unwalkableBlocks.size() > 1) {
             return direction.NONE;
+        }
         else if (unwalkableBlocks.get(0) > 0)
             return direction.LEFT;
         else
