@@ -172,7 +172,7 @@ public class CaneHarvester {
             mc.fontRendererObj.drawString("KeyBindA : " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, 52, -1);
             mc.fontRendererObj.drawString("KeyBindD : " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, 64, -1);
             mc.fontRendererObj.drawString("Walking forward : " + walkingForward, 4, 76, -1);
-            mc.fontRendererObj.drawString("Location : " + findMyLocation(), 4, 88, -1);
+            mc.fontRendererObj.drawString("Scoreboard line 6  : " + Utils.getScoreboardDisplayName(6), 4, 88, -1);
 
         }
 
@@ -197,6 +197,7 @@ public class CaneHarvester {
 
             //always
             Block blockIn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock();
+            Block blockStandingOn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)).getBlock();
 
             double dx = Math.abs(mc.thePlayer.posX - mc.thePlayer.lastTickPosX);
             double dz = Math.abs(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ);
@@ -221,7 +222,7 @@ public class CaneHarvester {
                 ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
             }
 
-            if(blockIn == Blocks.end_portal_frame){
+            if(blockIn == Blocks.end_portal_frame && mc.thePlayer.posX != initialX && mc.thePlayer.posZ != initialZ){
                 inTPPad = true;
                 Utils.addCustomChat("TP pad detected", EnumChatFormatting.BLUE);
                 ExecuteRunnable(changeLayer);
@@ -276,7 +277,7 @@ public class CaneHarvester {
             }
 
             //bedrock failsafe
-            Block blockStandingOn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)).getBlock();
+
             if (blockStandingOn == Blocks.bedrock) {
                 KeyBinding.setKeyBindState(keybindAttack, false);
 
@@ -295,7 +296,7 @@ public class CaneHarvester {
                         KeyBinding.setKeyBindState(keybindA, true);
                 } else{ // when walking forward
                     //hole drop fix (prevent sneaking at the hole)
-                    if(!Utils.isWalkable(Utils.getFrontDownBlock()))
+                    if(!Utils.isWalkable(Utils.getFrontDownBlock()) || !Utils.isWalkable(blockStandingOn))
                         KeyBinding.setKeyBindState(keyBindSneak, true);
                     else {
                         KeyBinding.setKeyBindState(keyBindSneak, false);
@@ -420,7 +421,9 @@ public class CaneHarvester {
                     unpressKeybinds();
                     enabled = false;
                     Thread.sleep(1000);
-                    if(!inTPPad) {
+                    if(inTPPad) {
+
+                    } else {
                         playerYaw = Math.round(Math.abs(playerYaw - 180));
                         Utils.smoothRotateClockwise(180);
                     }
@@ -655,11 +658,20 @@ public class CaneHarvester {
     }
     direction calculateDirection() {
         ArrayList<Integer> unwalkableBlocks = new ArrayList<Integer>();
-        for (int i = -5; i < 5; i++) {
-            if (!Utils.isWalkable(Utils.getBlockAround(i, 0))) {
-                unwalkableBlocks.add(i);
+        if (mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock().equals(Blocks.end_portal_frame)) {
+            for (int i = -5; i < 5; i++) {
+                if (!Utils.isWalkable(Utils.getBlockAround(i, 0, 1))) {
+                    unwalkableBlocks.add(i);
+                }
+            }
+        } else {
+            for (int i = -5; i < 5; i++) {
+                if (!Utils.isWalkable(Utils.getBlockAround(i, 0))) {
+                    unwalkableBlocks.add(i);
+                }
             }
         }
+
 
         if(unwalkableBlocks.size() == 0)
             return direction.RIGHT;
