@@ -345,6 +345,8 @@ public class CaneHarvester {
 
             //chagnge back to left/right
             if((Math.abs(initialX - mc.thePlayer.posX) > 5.75f || Math.abs(initialZ - mc.thePlayer.posZ) > 5.75f) && walkingForward) {
+
+                mc.thePlayer.sendChatMessage("/setspawn");
                 if(lastLaneDirection == direction.LEFT) {
                     //set last lane dir
                     currentDirection = direction.RIGHT;
@@ -453,7 +455,6 @@ public class CaneHarvester {
                 return;
             try {
 
-                mc.thePlayer.sendChatMessage("/setspawn");
                 cycles ++;
 
                 while(Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2)))) {
