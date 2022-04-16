@@ -454,13 +454,14 @@ public class CaneHarvester {
             if(stuck || inFailsafe || walkingForward)
                 return;
             try {
-
                 cycles ++;
-
-                while(Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2)))) {
+                do {
                     Utils.addCustomLog("Pressing S");
                     updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
+                    Thread.sleep(50);
                 }
+                while(Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2))));
+
                 updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
 
             } catch (Exception e) {
