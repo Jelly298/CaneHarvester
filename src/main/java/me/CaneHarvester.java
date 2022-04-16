@@ -38,8 +38,8 @@ import java.util.concurrent.TimeUnit;
 
 @Mod(modid = CaneHarvester.MODID, version = CaneHarvester.VERSION)
 public class CaneHarvester {
-    public static final String MODID = "nwmath";
-    public static final String NAME = "Farm Helper";
+    public static final String MODID = "scmath";
+    public static final String NAME = "Cane Harvester";
     public static final String VERSION = "1.0";
     /*
      ** @author JellyLab
@@ -56,6 +56,7 @@ public class CaneHarvester {
     public static boolean inFailsafe;
     public static boolean walkingForward;
     public static boolean pushedOff;
+    public static boolean inTPPad;
     volatile static boolean error = false;
     volatile static boolean setcycled = false;
     volatile static boolean stuck = false;
@@ -99,6 +100,11 @@ public class CaneHarvester {
         RIGHT,
         LEFT,
         NONE //at the backmost lane of the farm
+    }
+    enum location {
+        ISLAND,
+        HUB,
+        LOBBY
     }
 
     @EventHandler
@@ -166,6 +172,7 @@ public class CaneHarvester {
             mc.fontRendererObj.drawString("KeyBindA : " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, 52, -1);
             mc.fontRendererObj.drawString("KeyBindD : " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, 64, -1);
             mc.fontRendererObj.drawString("Walking forward : " + walkingForward, 4, 76, -1);
+            mc.fontRendererObj.drawString("Location : " + findMyLocation(), 4, 88, -1);
 
         }
 
@@ -214,6 +221,11 @@ public class CaneHarvester {
                 ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
             }
 
+            if(blockIn == Blocks.end_portal_frame){
+                inTPPad = true;
+                Utils.addCustomChat("TP pad detected", EnumChatFormatting.BLUE);
+                ExecuteRunnable(changeLayer);
+            }
             if (falling && !rotating && !inFailsafe && dx == 0 && dz == 0) {
                 cycles = 0;
                 Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
@@ -405,13 +417,14 @@ public class CaneHarvester {
             if (!inFailsafe) {
                 try {
                     rotating = true;
-
                     unpressKeybinds();
                     enabled = false;
                     Thread.sleep(1000);
-                    playerYaw = Math.round(Math.abs(playerYaw - 180));
-                    Utils.smoothRotateClockwise(180);
-                    Thread.sleep(2000);
+                    if(!inTPPad) {
+                        playerYaw = Math.round(Math.abs(playerYaw - 180));
+                        Utils.smoothRotateClockwise(180);
+                    }
+                    Thread.sleep(5000);
                     rotating = false;
                     initializeVaraibles();
                     enabled = true;
@@ -432,12 +445,15 @@ public class CaneHarvester {
                 return;
             try {
 
-                cycles ++;
-                Utils.addCustomLog("Pressing S");
-                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
-                Thread.sleep(300);
                 mc.thePlayer.sendChatMessage("/setspawn");
+                cycles ++;
+
+                while(Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2)))) {
+                    Utils.addCustomLog("Pressing S");
+                    updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
+                }
                 updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
+
             } catch (Exception e) {
                 e.printStackTrace();
 
@@ -456,7 +472,7 @@ public class CaneHarvester {
         @Override
         public void run() {
             mc.thePlayer.sendChatMessage("/warp hub");
-            ScheduleRunnable(WarpHome, 3, TimeUnit.SECONDS);
+            ScheduleRunnable(WarpHome, 5, TimeUnit.SECONDS);
         }
     };
 
@@ -605,6 +621,7 @@ public class CaneHarvester {
         pushedOff = false;
         lastLaneDirection = calculateDirection();
         currentDirection = calculateDirection();
+        inTPPad = false;
         setcycled = false;
         inFailsafe = false;
         walkingForward = false;
@@ -629,6 +646,13 @@ public class CaneHarvester {
 
     }
 
+    location findMyLocation () {
+        if(Utils.getScoreboardDisplayName(6).contains("Your island"))
+            return location.ISLAND;
+        else if(Utils.getScoreboardDisplayName(6).contains("Village"))
+            return location.HUB;
+        else return location.LOBBY;
+    }
     direction calculateDirection() {
         ArrayList<Integer> unwalkableBlocks = new ArrayList<Integer>();
         for (int i = -5; i < 5; i++) {

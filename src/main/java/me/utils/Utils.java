@@ -200,6 +200,13 @@ public class Utils {
                         mc.thePlayer.getLookVec().xCoord * a + mc.thePlayer.getLookVec().zCoord * b + Z)).getBlock());
 
     }
+    public static String getScoreboardDisplayName(int line){
+        try {
+            return Minecraft.getMinecraft().theWorld.getScoreboard().getObjectiveInDisplaySlot(line).getDisplayName();
+        } catch(Exception e){
+            return "";
+        }
+    }
 
 
 
