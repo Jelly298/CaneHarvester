@@ -172,7 +172,11 @@ public class CaneHarvester {
             mc.fontRendererObj.drawString("KeyBindA : " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, 52, -1);
             mc.fontRendererObj.drawString("KeyBindD : " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, 64, -1);
             mc.fontRendererObj.drawString("Walking forward : " + walkingForward, 4, 76, -1);
-            mc.fontRendererObj.drawString("Scoreboard line 6  : " + Utils.getScoreboardDisplayName(6), 4, 88, -1);
+            try {
+                mc.fontRendererObj.drawString("Scoreboard line 6  : " + Minecraft.getMinecraft().theWorld.getScoreboard().getObjectiveInDisplaySlot(6).getDisplayName(), 4, 88, -1);
+            }catch(Exception e){
+
+            }
 
         }
 
@@ -296,7 +300,7 @@ public class CaneHarvester {
                         KeyBinding.setKeyBindState(keybindA, true);
                 } else{ // when walking forward
                     //hole drop fix (prevent sneaking at the hole)
-                    if(!Utils.isWalkable(Utils.getFrontDownBlock()) || !Utils.isWalkable(blockStandingOn))
+                    if(!Utils.isWalkable(blockStandingOn))
                         KeyBinding.setKeyBindState(keyBindSneak, true);
                     else {
                         KeyBinding.setKeyBindState(keyBindSneak, false);
