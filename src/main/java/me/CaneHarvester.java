@@ -232,7 +232,7 @@ public class CaneHarvester {
                 ExecuteRunnable(changeLayer);
             }
             if (falling && !rotating && !inFailsafe &&
-                    (!Utils.isWalkable(Utils.getLeftBlock()) && !Utils.isWalkable(Utils.getFrontBlock())) || (!Utils.isWalkable(Utils.getRightBlock()) && !Utils.isWalkable(Utils.getFrontBlock()))) {
+                    ((!Utils.isWalkable(Utils.getLeftBlock()) && !Utils.isWalkable(Utils.getFrontBlock())) || (!Utils.isWalkable(Utils.getRightBlock()) && !Utils.isWalkable(Utils.getFrontBlock())))) {
                 cycles = 0;
                 Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
                 ExecuteRunnable(changeLayer);
