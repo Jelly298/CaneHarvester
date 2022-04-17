@@ -348,7 +348,7 @@ public class CaneHarvester {
             }
 
             //chagnge back to left/right
-            if((Math.abs(initialX - mc.thePlayer.posX) > 5.75f || Math.abs(initialZ - mc.thePlayer.posZ) > 5.75f) && walkingForward) {
+            if((Math.abs(initialX - mc.thePlayer.posX) > 5.9f || Math.abs(initialZ - mc.thePlayer.posZ) > 5.9f) && walkingForward) {
 
                 mc.thePlayer.sendChatMessage("/setspawn");
                 if(lastLaneDirection == direction.LEFT) {
