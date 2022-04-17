@@ -1,16 +1,27 @@
 package me.utils;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.Slot;
+import net.minecraft.scoreboard.Score;
+import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.scoreboard.ScorePlayerTeam;
+import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class Utils {
 
@@ -18,6 +29,12 @@ public class Utils {
         GlStateManager.scale(size,size,size);
         float mSize = (float)Math.pow(size,-1);
         Minecraft.getMinecraft().fontRendererObj.drawString(text,Math.round(x / size),Math.round(y / size),color);
+        GlStateManager.scale(mSize,mSize,mSize);
+    }
+    public static void drawStringWithShadow(String text, int x, int y, float size, int color) {
+        GlStateManager.scale(size,size,size);
+        float mSize = (float)Math.pow(size,-1);
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(text,Math.round(x / size),Math.round(y / size),color);
         GlStateManager.scale(mSize,mSize,mSize);
     }
     public static void hardRotate(float yaw) {
@@ -211,12 +228,60 @@ public class Utils {
                         mc.thePlayer.getLookVec().xCoord * rightOffset + mc.thePlayer.getLookVec().zCoord * frontOffset + Z)).getBlock());
 
     }
+
     public static String getScoreboardDisplayName(int line){
         try {
             return Minecraft.getMinecraft().theWorld.getScoreboard().getObjectiveInDisplaySlot(line).getDisplayName();
         } catch(Exception e){
             return "";
         }
+    }
+
+    public static List<String> getSidebarLines() {
+        List<String> lines = new ArrayList<>();
+        if (Minecraft.getMinecraft().theWorld == null) return lines;
+        Scoreboard scoreboard = Minecraft.getMinecraft().theWorld.getScoreboard();
+        if (scoreboard == null) return lines;
+
+        ScoreObjective objective = scoreboard.getObjectiveInDisplaySlot(1);
+        if (objective == null) return lines;
+
+        Collection<Score> scores = scoreboard.getSortedScores(objective);
+        List<Score> list = scores.stream()
+                .filter(input -> input != null && input.getPlayerName() != null && !input.getPlayerName()
+                        .startsWith("#"))
+                .collect(Collectors.toList());
+
+        if (list.size() > 15) {
+            scores = Lists.newArrayList(Iterables.skip(list, scores.size() - 15));
+        } else {
+            scores = list;
+        }
+
+        for (Score score : scores) {
+            ScorePlayerTeam team = scoreboard.getPlayersTeam(score.getPlayerName());
+            lines.add(ScorePlayerTeam.formatPlayerName(team, score.getPlayerName()));
+        }
+
+        return lines;
+    }
+
+    public static String cleanSB(String scoreboard) {
+        char[] nvString = StringUtils.stripControlCodes(scoreboard).toCharArray();
+        StringBuilder cleaned = new StringBuilder();
+
+        for (char c : nvString) {
+            if ((int) c > 20 && (int) c < 127) {
+                cleaned.append(c);
+            }
+        }
+
+        return cleaned.toString();
+    }
+    public static String formatNumber(int number){
+        String s = Integer.toString(number);
+        return String.format("%,d", number);
+
     }
 
 

@@ -9,6 +9,8 @@ import net.minecraft.client.gui.GuiDisconnected;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.*;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
@@ -72,6 +74,7 @@ public class CaneHarvester {
     public volatile static double initialX = 0;
     public volatile static double initialZ = 0;
     public static float walkForwardDis = 5.9f;
+    public static location currentLocation;
     static int cycles = 0;
 
     public static boolean openedGUI = false;
@@ -129,6 +132,7 @@ public class CaneHarvester {
         customKeyBinds[1] = new KeyBinding("Toggle script", Keyboard.KEY_GRAVE, "CaneHarvester");
         ClientRegistry.registerKeyBinding(customKeyBinds[0]);
         ClientRegistry.registerKeyBinding(customKeyBinds[1]);
+        ExecuteRunnable(checkPriceChange);
 
     }
 
@@ -169,7 +173,7 @@ public class CaneHarvester {
     public void render(RenderGameOverlayEvent event) {
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
 
-            mc.fontRendererObj.drawString("InitialX/Z : " + initialX + "/" + initialZ, 4, 4, -1);
+           /* mc.fontRendererObj.drawString("InitialX/Z : " + initialX + "/" + initialZ, 4, 4, -1);
             mc.fontRendererObj.drawString("MC X/Y/Z " + mc.thePlayer.posX + "/" + mc.thePlayer.posY + "/" + mc.thePlayer.posZ, 4, 16, -1);
             mc.fontRendererObj.drawString("KeyBindW : " + (mc.gameSettings.keyBindForward.isKeyDown() ? "Pressed" : "Not pressed"), 4, 28, -1);
             mc.fontRendererObj.drawString("KeyBindS : " + (mc.gameSettings.keyBindBack.isKeyDown() ? "Pressed" : "Not pressed"), 4, 40, -1);
@@ -183,7 +187,29 @@ public class CaneHarvester {
                 mc.fontRendererObj.drawString("Scoreboard line 6  : " + Minecraft.getMinecraft().theWorld.getScoreboard().getObjectiveInDisplaySlot(6).getDisplayName(), 4, 88, -1);
             }catch(Exception e){
 
-            }
+            }*/
+
+            Utils.drawStringWithShadow(
+                      EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD +  "PROFIT CALCULATOR" + EnumChatFormatting.GRAY +  "--", 4, 25, 0.8f, -1);
+            Utils.drawStringWithShadow(
+                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Profit/min : " + EnumChatFormatting.GOLD +  "$" + Utils.formatNumber(moneyper10sec * 6), 4, 40, 0.8f, -1);
+            Utils.drawStringWithShadow(
+                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Profit/hr : " + EnumChatFormatting.GOLD +  "$" + Utils.formatNumber(moneyper10sec * 6 * 60), 4, 50, 0.8f,-1);
+            Utils.drawStringWithShadow(
+                     EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Profit/12hr : " + EnumChatFormatting.GOLD + "$" +  Utils.formatNumber(moneyper10sec * 6 * 60 * 12), 4, 60, 0.8f,-1);
+            Utils.drawStringWithShadow(
+                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Profit/24hr : " + EnumChatFormatting.GOLD + "$" +  Utils.formatNumber(moneyper10sec * 6 * 60 * 24), 4, 70, 0.8f,-1);
+
+            Utils.drawStringWithShadow(
+                    EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD +  "INVENTORY INFORMATION" + EnumChatFormatting.GRAY +  "--", 4, 95, 0.8f, -1);
+            Utils.drawStringWithShadow(
+                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Enchanted sugar : " + EnumChatFormatting.GREEN +  Utils.formatNumber(totalEsc), 4, 110, 0.8f, -1);
+            Utils.drawStringWithShadow(
+                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Enchanted sugar cane : " + EnumChatFormatting.GREEN +  Utils.formatNumber(totalDEsc), 4, 120, 0.8f,-1);
+            Utils.drawStringWithShadow(
+                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Total inventory price : " + EnumChatFormatting.GREEN + "$" +  Utils.formatNumber(totalMoney), 4, 130, 0.8f,-1);
+
+
 
         }
 
@@ -198,167 +224,178 @@ public class CaneHarvester {
 
         // profit calculator && angle caculation
         if (mc.thePlayer != null && mc.theWorld != null) {
+            currentLocation = getLocation();
             if (!rotating)
                 playerYaw = Math.round(Utils.get360RotationYaw() / 90) < 4 ? Math.round(Utils.get360RotationYaw() / 90) * 90 : 0;
+
+            int tempEsc = 0; int tempDEsc = 0; int tempsc = 0;
+            for (int i = 0; i < 35; i++) {
+                ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
+                if(stack != null) {
+                    if (stack.getDisplayName().contains("Enchanted Sugar"))
+                        tempEsc = tempEsc + stack.stackSize;
+
+                    if (stack.getDisplayName().contains("Enchanted Sugar Cane"))
+                        tempDEsc = tempDEsc + stack.stackSize;
+
+                    if (stack.getItem().equals(Items.reeds))
+                        tempsc = tempsc + stack.stackSize;
+                }
+
+            }
+            totalDEsc = tempDEsc; totalEsc = tempEsc; totalSc = tempsc;
+            totalMoney = tempDEsc * 51200 + tempEsc * 320 + tempsc * 2;
 
         }
 
         //script code
         if (enabled && mc.thePlayer != null && mc.theWorld != null) {
 
-            //always
-            Block blockIn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock();
-            Block blockStandingOn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)).getBlock();
+            if(getLocation() == location.ISLAND) {
 
-            double dx = Math.abs(mc.thePlayer.posX - mc.thePlayer.lastTickPosX);
-            double dz = Math.abs(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ);
-            double dy = Math.abs(mc.thePlayer.posY - mc.thePlayer.lastTickPosY);
-            boolean falling = blockIn == Blocks.air && dy != 0;
+                //always
+                Block blockIn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock();
+                Block blockStandingOn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)).getBlock();
+
+                double dx = Math.abs(mc.thePlayer.posX - mc.thePlayer.lastTickPosX);
+                double dz = Math.abs(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ);
+                double dy = Math.abs(mc.thePlayer.posY - mc.thePlayer.lastTickPosY);
+                boolean falling = blockIn == Blocks.air && dy != 0;
 
 
-            mc.gameSettings.pauseOnLostFocus = false;
-            mc.thePlayer.inventory.currentItem = 0;
-            mc.gameSettings.gammaSetting = 100;
+                mc.gameSettings.pauseOnLostFocus = false;
+                mc.thePlayer.inventory.currentItem = 0;
+                mc.gameSettings.gammaSetting = 100;
 
-            //angles (locked)
-            if (!inFailsafe) {
-                mc.thePlayer.rotationPitch = 0;
-                Utils.hardRotate(playerYaw);
-                KeyBinding.setKeyBindState(keybindAttack, true);
-            }
-            //INITIALIZE
-            if (!locked) {
-                initializeVaraibles();
-                Utils.addCustomLog("Going : " + calculateDirection());
-                walkForwardDis = calculateDirection() == direction.NONE ? 1.1f : 5.9f;
-                locked = true;
-                ScheduleRunnable(checkChange, 8, TimeUnit.SECONDS);
-            }
-
-            if(blockIn == Blocks.end_portal_frame && mc.thePlayer.posX != initialX && mc.thePlayer.posZ != initialZ){
-                inTPPad = true;
-                Utils.addCustomChat("TP pad detected", EnumChatFormatting.BLUE);
-                ExecuteRunnable(changeLayer);
-            }
-            if (falling && !rotating && !inFailsafe &&
-                    ((!Utils.isWalkable(Utils.getLeftBlock()) && !Utils.isWalkable(Utils.getFrontBlock())) || (!Utils.isWalkable(Utils.getRightBlock()) && !Utils.isWalkable(Utils.getFrontBlock())))) {
-                cycles = 0;
-                Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
-                ExecuteRunnable(changeLayer);
-                enabled = false;
-
-            }
-            //antistuck
-            if (deltaX < 0.2d && deltaZ < 0.2d && deltaY < 0.0001d && !inFailsafe && !stuck && !rotating) {
-                enabled = false;
-                stuck = true;
-                ExecuteRunnable(UnStuck);
-                unpressKeybinds();
-            }
-
-            //bedrock failsafe
-
-            if (blockStandingOn == Blocks.bedrock) {
-                KeyBinding.setKeyBindState(keybindAttack, false);
-
-                ScheduleRunnable(EMERGENCY, 200, TimeUnit.MILLISECONDS);
-                inFailsafe = true;
-
-            }
-
-            //states
-            if(dy == 0 && !inFailsafe && !stuck){
-                if(!walkingForward) { //normal
-                    KeyBinding.setKeyBindState(keyBindSneak, false);
-                    if (currentDirection.equals(direction.RIGHT))
-                        KeyBinding.setKeyBindState(keybindD, true);
-                    else if(currentDirection.equals(direction.LEFT))
-                        KeyBinding.setKeyBindState(keybindA, true);
-                    else
-                        walkingForward = true;
-                } else{ // walking forward
-
-                    //hole drop fix (prevent sneaking at the hole)
-                    KeyBinding.setKeyBindState(keyBindSneak, !Utils.isWalkable(blockStandingOn));
-
-                    //unleash keys
-                    if(lastLaneDirection.equals(direction.LEFT))
-                        updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), mc.gameSettings.keyBindLeft.isKeyDown(),  false);
-                    else
-                        updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), false, mc.gameSettings.keyBindRight.isKeyDown());
-
-                    //push keys so the next tick it will unleash
-                    while(!pushedOff && !lastLaneDirection.equals(direction.NONE))
-                    {
-                        if (lastLaneDirection.equals(direction.LEFT)) {
-                            Utils.addCustomLog("Bouncing to the right");
-                            updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), mc.gameSettings.keyBindLeft.isKeyDown(), true);
-                        } else {
-                            Utils.addCustomLog("Bouncing to the left");
-                            updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), true, mc.gameSettings.keyBindRight.isKeyDown());
-                        }
-                        pushedOff = true;
-                    }
-                    KeyBinding.setKeyBindState(keybindW, true);
+                //angles (locked)
+                if (!inFailsafe) {
+                    mc.thePlayer.rotationPitch = 0;
+                    Utils.hardRotate(playerYaw);
+                    KeyBinding.setKeyBindState(keybindAttack, true);
                 }
-            }
-
-
-            //change to walk forward
-            if (Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !inFailsafe  && !rotating) {
-                if (shouldWalkForward() && !walkingForward && ((int)initialX != (int)mc.thePlayer.posX || (int)initialZ != (int)mc.thePlayer.posZ)) {
-                    updateKeybinds(true, false, false, false);
-                    walkingForward = true;
-
-
+                //INITIALIZE
+                if (!locked) {
+                    initializeVaraibles();
+                    Utils.addCustomLog("Going : " + calculateDirection());
                     walkForwardDis = calculateDirection() == direction.NONE ? 1.1f : 5.9f;
-                    Utils.addCustomLog("Walking forward, walking dis = " + walkForwardDis);
-
-                    pushedOff = false;
-                    initialX = mc.thePlayer.posX;
-                    initialZ = mc.thePlayer.posZ;
+                    locked = true;
+                    ScheduleRunnable(checkChange, 8, TimeUnit.SECONDS);
                 }
+
+                if (blockIn == Blocks.end_portal_frame && mc.thePlayer.posX != initialX && mc.thePlayer.posZ != initialZ) {
+                    inTPPad = true;
+                    Utils.addCustomChat("TP pad detected", EnumChatFormatting.BLUE);
+                    ExecuteRunnable(changeLayer);
+                }
+                if (falling && !rotating && !inFailsafe &&
+                        ((!Utils.isWalkable(Utils.getLeftBlock()) && !Utils.isWalkable(Utils.getFrontBlock())) || (!Utils.isWalkable(Utils.getRightBlock()) && !Utils.isWalkable(Utils.getFrontBlock())))) {
+                    cycles = 0;
+                    Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
+                    ExecuteRunnable(changeLayer);
+                    enabled = false;
+
+                }
+                //antistuck
+                if (deltaX < 0.2d && deltaZ < 0.2d && deltaY < 0.0001d && !inFailsafe && !stuck && !rotating) {
+                    enabled = false;
+                    stuck = true;
+                    ExecuteRunnable(UnStuck);
+                    unpressKeybinds();
+                }
+
+                //bedrock failsafe
+
+                if (blockStandingOn == Blocks.bedrock) {
+                    KeyBinding.setKeyBindState(keybindAttack, false);
+
+                    ScheduleRunnable(EMERGENCY, 200, TimeUnit.MILLISECONDS);
+                    inFailsafe = true;
+
+                }
+
+                //states
+                if (dy == 0 && !inFailsafe && !stuck) {
+                    if (!walkingForward) { //normal
+                        KeyBinding.setKeyBindState(keyBindSneak, false);
+                        if (currentDirection.equals(direction.RIGHT))
+                            KeyBinding.setKeyBindState(keybindD, true);
+                        else if (currentDirection.equals(direction.LEFT))
+                            KeyBinding.setKeyBindState(keybindA, true);
+                        else
+                            walkingForward = true;
+                    } else { // walking forward
+
+                        //hole drop fix (prevent sneaking at the hole)
+                        KeyBinding.setKeyBindState(keyBindSneak, !Utils.isWalkable(blockStandingOn));
+
+                        //unleash keys
+                        if (lastLaneDirection.equals(direction.LEFT))
+                            updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), mc.gameSettings.keyBindLeft.isKeyDown(), false);
+                        else
+                            updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), false, mc.gameSettings.keyBindRight.isKeyDown());
+
+                        //push keys so the next tick it will unleash
+                        while (!pushedOff && !lastLaneDirection.equals(direction.NONE)) {
+                            if (lastLaneDirection.equals(direction.LEFT)) {
+                                Utils.addCustomLog("Bouncing to the right");
+                                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), mc.gameSettings.keyBindLeft.isKeyDown(), true);
+                            } else {
+                                Utils.addCustomLog("Bouncing to the left");
+                                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), mc.gameSettings.keyBindBack.isKeyDown(), true, mc.gameSettings.keyBindRight.isKeyDown());
+                            }
+                            pushedOff = true;
+                        }
+                        KeyBinding.setKeyBindState(keybindW, true);
+                    }
+                }
+
+
+                //change to walk forward
+                if (Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !inFailsafe && !rotating) {
+                    if (shouldWalkForward() && !walkingForward && ((int) initialX != (int) mc.thePlayer.posX || (int) initialZ != (int) mc.thePlayer.posZ)) {
+                        updateKeybinds(true, false, false, false);
+                        walkingForward = true;
+
+
+                        walkForwardDis = calculateDirection() == direction.NONE ? 1.1f : 5.9f;
+                        Utils.addCustomLog("Walking forward, walking dis = " + walkForwardDis);
+
+                        pushedOff = false;
+                        initialX = mc.thePlayer.posX;
+                        initialZ = mc.thePlayer.posZ;
+                    }
+                }
+
+                //chagnge back to left/right
+                if ((Math.abs(initialX - mc.thePlayer.posX) > walkForwardDis || Math.abs(initialZ - mc.thePlayer.posZ) > walkForwardDis) && walkingForward) {
+
+                    mc.thePlayer.sendChatMessage("/setspawn");
+                    if (!Utils.isWalkable(Utils.getLeftBlock()) || !Utils.isWalkable(Utils.getBlockAround(-2, 0))) {
+                        //set last lane dir
+                        currentDirection = direction.RIGHT;
+                        lastLaneDirection = direction.RIGHT;
+                        updateKeybinds(false, false, false, true);
+                    } else if (!Utils.isWalkable(Utils.getRightBlock()) || !Utils.isWalkable(Utils.getBlockAround(2, 0))) {
+                        currentDirection = direction.LEFT;
+                        lastLaneDirection = direction.LEFT;
+                        updateKeybinds(false, false, true, false);
+                    }
+
+                    Utils.addCustomLog("Changing motion : Going " + currentDirection);
+                    ScheduleRunnable(PressS, 200, TimeUnit.MILLISECONDS);
+                    walkingForward = false;
+                }
+
+
+                //resync
+                if (cycles == 6 && Config.resync && !rotating)
+                    ExecuteRunnable(reSync);
+                else if (cycles == 6 && Config.resync)
+                    cycles = 0;
+            } else {
+                unpressKeybinds();
+
             }
-
-            //chagnge back to left/right
-            if((Math.abs(initialX - mc.thePlayer.posX) > walkForwardDis || Math.abs(initialZ - mc.thePlayer.posZ) > walkForwardDis) && walkingForward) {
-
-                mc.thePlayer.sendChatMessage("/setspawn");
-                /*if(lastLaneDirection == direction.LEFT) {
-                    //set last lane dir
-                    currentDirection = direction.RIGHT;
-                    lastLaneDirection = direction.RIGHT;
-                    updateKeybinds(false, false, false, true);
-                }
-                else {
-                    currentDirection = direction.LEFT;
-                    lastLaneDirection = direction.LEFT;
-                    updateKeybinds(false, false, true, false);
-                }*/
-
-                if (!Utils.isWalkable(Utils.getLeftBlock()) || !Utils.isWalkable(Utils.getBlockAround(-2, 0))) {
-                    //set last lane dir
-                    currentDirection = direction.RIGHT;
-                    lastLaneDirection = direction.RIGHT;
-                    updateKeybinds(false, false, false, true);
-                } else if(!Utils.isWalkable(Utils.getRightBlock()) || !Utils.isWalkable(Utils.getBlockAround(2, 0))){
-                    currentDirection = direction.LEFT;
-                    lastLaneDirection = direction.LEFT;
-                    updateKeybinds(false, false, true, false);
-                }
-
-                Utils.addCustomLog("Changing motion : Going " + currentDirection);
-                ScheduleRunnable(PressS, 200, TimeUnit.MILLISECONDS);
-                walkingForward = false;
-            }
-
-
-
-            //resync
-            if (cycles == 6 && Config.resync && !rotating)
-                ExecuteRunnable(reSync);
-            else if (cycles == 6 && Config.resync)
-                cycles = 0;
         } else {
             locked = false;
         }
@@ -368,6 +405,18 @@ public class CaneHarvester {
 
 
     //multi-threads
+
+    Runnable checkPriceChange = new Runnable() {
+        @Override
+        public void run() {
+
+            if(!(prevMoney == -999) && (totalMoney - prevMoney >= 0)) {
+                moneyper10sec = totalMoney - prevMoney;
+            }
+            prevMoney = totalMoney;
+            ScheduleRunnable(checkPriceChange, 10, TimeUnit.SECONDS);
+        }
+    };
 
     Runnable reSync = new Runnable() {
         @Override
@@ -677,6 +726,14 @@ public class CaneHarvester {
     }
 
     location getLocation() {
+        for (String line : Utils.getSidebarLines()) {
+            String cleanedLine = Utils.cleanSB(line);
+            if (cleanedLine.contains("Village")) {
+                return location.HUB;
+            } else if (cleanedLine.contains("Island")) {
+                return location.ISLAND;
+            }
+        }
         return location.LOBBY;
     }
 
