@@ -510,6 +510,7 @@ public class CaneHarvester {
             if (!error) {
                 ScheduleRunnable(afterRejoin2, 1, TimeUnit.SECONDS);
             } else {
+                Utils.addCustomLog("Error detected. Waiting 20 seconds");
                 ScheduleRunnable(WarpHome, 20, TimeUnit.SECONDS);
                 error = false;
             }
@@ -520,9 +521,8 @@ public class CaneHarvester {
         @Override
         public void run() {
 
-            KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), false);
+            KeyBinding.setKeyBindState(keyBindSneak, false);
 
-            initializeVaraibles();
 
             mc.inGameHasFocus = true;
             mouseHelper.grabMouseCursor();
@@ -534,6 +534,8 @@ public class CaneHarvester {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            enabled = true;
 
             ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
         }
@@ -608,6 +610,7 @@ public class CaneHarvester {
         inFailsafe = true;
         stuck = false;
         walkingForward = false;
+        enabled = false;
         unpressKeybinds();
     }
 
