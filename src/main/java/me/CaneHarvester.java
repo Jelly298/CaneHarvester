@@ -63,14 +63,14 @@ public class CaneHarvester {
     volatile static boolean rotating = false;
 
 
-    volatile static double beforeX = 0;
-    volatile static double beforeZ = 0;
-    volatile static double beforeY = 0;
-    volatile static double deltaX = 10000;
-    volatile static double deltaZ = 10000;
-    volatile static double deltaY = 0;
-    volatile static double initialX = 0;
-    volatile static double initialZ = 0;
+    public volatile static double beforeX = 0;
+    public volatile static double beforeZ = 0;
+    public volatile static double beforeY = 0;
+    public volatile static double deltaX = 10000;
+    public volatile static double deltaZ = 10000;
+    public volatile static double deltaY = 0;
+    public volatile static double initialX = 0;
+    public volatile static double initialZ = 0;
 
     public static boolean openedGUI = false;
 
@@ -165,13 +165,17 @@ public class CaneHarvester {
     @SubscribeEvent
     public void render(RenderGameOverlayEvent event) {
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
-            mc.fontRendererObj.drawString("Angle : " + playerYaw, 4, 4, -1);
-            mc.fontRendererObj.drawString("Minecraft yaw : " + mc.thePlayer.rotationYaw, 4, 16, -1);
+
+            mc.fontRendererObj.drawString("InitialX/Z : " + initialX + "/" + initialZ, 4, 4, -1);
+            mc.fontRendererObj.drawString("MC X/Y/Z " + mc.thePlayer.posX + "/" + mc.thePlayer.posY + "/" + mc.thePlayer.posZ, 4, 16, -1);
             mc.fontRendererObj.drawString("KeyBindW : " + (mc.gameSettings.keyBindForward.isKeyDown() ? "Pressed" : "Not pressed"), 4, 28, -1);
             mc.fontRendererObj.drawString("KeyBindS : " + (mc.gameSettings.keyBindBack.isKeyDown() ? "Pressed" : "Not pressed"), 4, 40, -1);
             mc.fontRendererObj.drawString("KeyBindA : " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, 52, -1);
             mc.fontRendererObj.drawString("KeyBindD : " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, 64, -1);
             mc.fontRendererObj.drawString("Walking forward : " + walkingForward, 4, 76, -1);
+            mc.fontRendererObj.drawString("Angle : " + playerYaw, 4, 88, -1);
+            mc.fontRendererObj.drawString("Minecraft yaw : " + mc.thePlayer.rotationYaw, 4, 100, -1);
+
             try {
                 mc.fontRendererObj.drawString("Scoreboard line 6  : " + Minecraft.getMinecraft().theWorld.getScoreboard().getObjectiveInDisplaySlot(6).getDisplayName(), 4, 88, -1);
             }catch(Exception e){
@@ -240,7 +244,7 @@ public class CaneHarvester {
 
             }
             //antistuck
-            if (deltaX < 0.5d && deltaZ < 0.5d && deltaY < 0.0001d && !inFailsafe && !stuck) {
+            if (deltaX < 0.2d && deltaZ < 0.2d && deltaY < 0.0001d && !inFailsafe && !stuck) {
                 Utils.addCustomChat("Detected stuck");
                 stuck = true;
 
@@ -332,7 +336,7 @@ public class CaneHarvester {
 
             //change to walk forward
             if (Utils.roundTo2DecimalPlaces(dx) == 0 && Utils.roundTo2DecimalPlaces(dz) == 0 && !inFailsafe  && !rotating) {
-                if (shouldWalkForward() && !walkingForward && (initialX != mc.thePlayer.posX || initialZ != mc.thePlayer.posZ)) {
+                if (shouldWalkForward() && !walkingForward && ((int)initialX != (int)mc.thePlayer.posX || (int)initialZ != (int)mc.thePlayer.posZ)) {
                     updateKeybinds(true, false, false, false);
                     walkingForward = true;
                     Utils.addCustomLog("Walking forward");
@@ -536,7 +540,6 @@ public class CaneHarvester {
             }
 
             enabled = true;
-
             ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
         }
     };
