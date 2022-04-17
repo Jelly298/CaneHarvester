@@ -1,6 +1,5 @@
 package me;
 
-import me.config.Config;
 import me.gui.GUI;
 import me.utils.Utils;
 import net.minecraft.block.Block;
@@ -93,6 +92,8 @@ public class CaneHarvester {
     static volatile int totalDEsc = 0;
     static volatile int totalMoney = 0;
     static volatile int prevMoney = -999;
+
+    static volatile boolean checkingPos = false;
 
     static volatile int moneyper10sec = 0;
 
@@ -306,7 +307,7 @@ public class CaneHarvester {
                     Utils.addCustomLog("Going : " + calculateDirection());
                     walkForwardDis = calculateDirection() == direction.NONE ? 1.1f : 5.9f;
                     locked = true;
-                    ScheduleRunnable(checkChange, 8, TimeUnit.SECONDS);
+                    ScheduleRunnable(checkPosChange, 8, TimeUnit.SECONDS);
                 }
 
                 if (blockIn == Blocks.end_portal_frame && mc.thePlayer.posX != initialX && mc.thePlayer.posZ != initialZ) {
@@ -458,23 +459,29 @@ public class CaneHarvester {
         }
     };
 
-    Runnable checkChange = new Runnable() {
+    Runnable checkPosChange = new Runnable() {
         @Override
         public void run() {
-
-            if (!inFailsafe && enabled) {
-                deltaX = Math.abs(mc.thePlayer.posX - beforeX);
-                deltaZ = Math.abs(mc.thePlayer.posZ - beforeZ);
-                deltaY = Math.abs(mc.thePlayer.posY - beforeY);
-                beforeX = mc.thePlayer.posX;
-                beforeZ = mc.thePlayer.posZ;
-                beforeY = mc.thePlayer.posY;
-
-
-                ScheduleRunnable(checkChange, 8, TimeUnit.SECONDS);
-
+            if (checkingPos)
+                return;
+            try {
+                checkingPos = true;
+                if (!inFailsafe && enabled) {
+                    deltaX = Math.abs(mc.thePlayer.posX - beforeX);
+                    deltaZ = Math.abs(mc.thePlayer.posZ - beforeZ);
+                    deltaY = Math.abs(mc.thePlayer.posY - beforeY);
+                    beforeX = mc.thePlayer.posX;
+                    beforeZ = mc.thePlayer.posZ;
+                    beforeY = mc.thePlayer.posY;
+                    Thread.sleep(8000);
+                }
+            } catch(Exception e){
+                e.printStackTrace();
+            } finally {
+                checkingPos = false;
+                if(!inFailsafe && enabled)
+                    ExecuteRunnable(checkPosChange);
             }
-
         }
     };
 
