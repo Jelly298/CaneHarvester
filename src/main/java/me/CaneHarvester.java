@@ -75,7 +75,6 @@ public class CaneHarvester {
     public volatile static double initialZ = 0;
     public static float walkForwardDis = 5.9f;
     public static location currentLocation;
-    static int cycles = 0;
 
     public static boolean openedGUI = false;
 
@@ -107,6 +106,7 @@ public class CaneHarvester {
         LEFT,
         NONE //at the backmost lane of the farm
     }
+
     enum location {
         ISLAND,
         HUB,
@@ -190,29 +190,52 @@ public class CaneHarvester {
             }*/
 
             Utils.drawStringWithShadow(
-                      EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD +  "PROFIT CALCULATOR" + EnumChatFormatting.GRAY +  "--", 4, 25, 0.8f, -1);
+                    EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD + "PROFIT CALCULATOR" + EnumChatFormatting.GRAY + "--", 4, 25, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Profit/min : " + EnumChatFormatting.GOLD +  "$" + Utils.formatNumber(moneyper10sec * 6), 4, 40, 0.8f, -1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/min : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneyper10sec * 6), 4, 40, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Profit/hr : " + EnumChatFormatting.GOLD +  "$" + Utils.formatNumber(moneyper10sec * 6 * 60), 4, 50, 0.8f,-1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneyper10sec * 6 * 60), 4, 50, 0.8f, -1);
             Utils.drawStringWithShadow(
-                     EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Profit/12hr : " + EnumChatFormatting.GOLD + "$" +  Utils.formatNumber(moneyper10sec * 6 * 60 * 12), 4, 60, 0.8f,-1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/12hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneyper10sec * 6 * 60 * 12), 4, 60, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Profit/24hr : " + EnumChatFormatting.GOLD + "$" +  Utils.formatNumber(moneyper10sec * 6 * 60 * 24), 4, 70, 0.8f,-1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/24hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneyper10sec * 6 * 60 * 24), 4, 70, 0.8f, -1);
 
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD +  "INVENTORY INFORMATION" + EnumChatFormatting.GRAY +  "--", 4, 95, 0.8f, -1);
+                    EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD + "INVENTORY INFORMATION" + EnumChatFormatting.GRAY + "--", 4, 95, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Enchanted sugar : " + EnumChatFormatting.GREEN +  Utils.formatNumber(totalEsc), 4, 110, 0.8f, -1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Enchanted sugar : " + EnumChatFormatting.GREEN + Utils.formatNumber(totalEsc), 4, 110, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Enchanted sugar cane : " + EnumChatFormatting.GREEN +  Utils.formatNumber(totalDEsc), 4, 120, 0.8f,-1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Enchanted sugar cane : " + EnumChatFormatting.GREEN + Utils.formatNumber(totalDEsc), 4, 120, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + ""  +EnumChatFormatting.BOLD + "Total inventory price : " + EnumChatFormatting.GREEN + "$" +  Utils.formatNumber(totalMoney), 4, 130, 0.8f,-1);
-
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Total inventory price : " + EnumChatFormatting.GREEN + "$" + Utils.formatNumber(totalMoney), 4, 130, 0.8f, -1);
+            Utils.drawString("Density : " + Integer.toString(getDensityPercentage(direction.RIGHT)), 4, 150, 1, -1);
 
 
         }
 
+    }
+
+    @SubscribeEvent
+    public void OnKeyPress(InputEvent.KeyInputEvent event) {
+
+        if (!rotating) {
+            if (customKeyBinds[1].isPressed()) {
+
+
+                if (!enabled) {
+                    if (getLocation() == location.ISLAND) {
+                        Utils.addCustomChat("Starting script");
+                        toggle();
+                    } else
+                        Utils.addCustomChat("Wrong location detected");
+                } else
+                    toggle();
+
+            }
+            if (customKeyBinds[0].isPressed()) {
+                mc.displayGuiScreen(new GUI());
+            }
+        }
     }
 
 
@@ -228,10 +251,12 @@ public class CaneHarvester {
             if (!rotating)
                 playerYaw = Math.round(Utils.get360RotationYaw() / 90) < 4 ? Math.round(Utils.get360RotationYaw() / 90) * 90 : 0;
 
-            int tempEsc = 0; int tempDEsc = 0; int tempsc = 0;
+            int tempEsc = 0;
+            int tempDEsc = 0;
+            int tempsc = 0;
             for (int i = 0; i < 35; i++) {
                 ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
-                if(stack != null) {
+                if (stack != null) {
                     if (stack.getDisplayName().contains("Enchanted Sugar"))
                         tempEsc = tempEsc + stack.stackSize;
 
@@ -243,7 +268,9 @@ public class CaneHarvester {
                 }
 
             }
-            totalDEsc = tempDEsc; totalEsc = tempEsc; totalSc = tempsc;
+            totalDEsc = tempDEsc;
+            totalEsc = tempEsc;
+            totalSc = tempsc;
             totalMoney = tempDEsc * 51200 + tempEsc * 320 + tempsc * 2;
 
         }
@@ -251,7 +278,7 @@ public class CaneHarvester {
         //script code
         if (enabled && mc.thePlayer != null && mc.theWorld != null) {
 
-            if(getLocation() == location.ISLAND) {
+            if (getLocation() == location.ISLAND) {
 
                 //always
                 Block blockIn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock();
@@ -289,7 +316,6 @@ public class CaneHarvester {
                 }
                 if (falling && !rotating && !inFailsafe &&
                         ((!Utils.isWalkable(Utils.getLeftBlock()) && !Utils.isWalkable(Utils.getFrontBlock())) || (!Utils.isWalkable(Utils.getRightBlock()) && !Utils.isWalkable(Utils.getFrontBlock())))) {
-                    cycles = 0;
                     Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
                     ExecuteRunnable(changeLayer);
                     enabled = false;
@@ -385,13 +411,6 @@ public class CaneHarvester {
                     ScheduleRunnable(PressS, 200, TimeUnit.MILLISECONDS);
                     walkingForward = false;
                 }
-
-
-                //resync
-                if (cycles == 6 && Config.resync && !rotating)
-                    ExecuteRunnable(reSync);
-                else if (cycles == 6 && Config.resync)
-                    cycles = 0;
             } else {
                 unpressKeybinds();
 
@@ -410,7 +429,7 @@ public class CaneHarvester {
         @Override
         public void run() {
 
-            if(!(prevMoney == -999) && (totalMoney - prevMoney >= 0)) {
+            if (!(prevMoney == -999) && (totalMoney - prevMoney >= 0)) {
                 moneyper10sec = totalMoney - prevMoney;
             }
             prevMoney = totalMoney;
@@ -422,10 +441,10 @@ public class CaneHarvester {
         @Override
         public void run() {
             try {
-                cycles = 0;
-                if (rotating) {
+                if (rotating || walkingForward || stuck || inFailsafe || currentDirection == direction.NONE) {
                     return;
                 }
+
                 Utils.addCustomChat("Resyncing...");
                 Thread.sleep(350);
                 activateFailsafe();
@@ -466,7 +485,7 @@ public class CaneHarvester {
                     unpressKeybinds();
                     enabled = false;
                     Thread.sleep(1000);
-                    if(!inTPPad) {
+                    if (!inTPPad) {
                         playerYaw = Math.round(Math.abs(playerYaw - 180));
                         Utils.smoothRotateClockwise(180);
                     }
@@ -482,28 +501,35 @@ public class CaneHarvester {
     };
 
 
-
-
     Runnable PressS = new Runnable() {
         @Override
         public void run() {
-            if(stuck || inFailsafe || walkingForward)
+
+            if (stuck || inFailsafe || walkingForward)
                 return;
             try {
-                cycles ++;
                 do {
                     Utils.addCustomLog("Pressing S");
                     updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
                     Thread.sleep(50);
                 }
-                while(Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2))));
+                while (Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2))));
 
                 updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
+                ScheduleRunnable(checkDensity, 1, TimeUnit.SECONDS);
+
 
             } catch (Exception e) {
                 e.printStackTrace();
 
             }
+
+        }
+    };
+
+    Runnable checkDensity = () -> {
+        if(getDensityPercentage(currentDirection) > 80){
+            ExecuteRunnable(reSync);
         }
     };
 
@@ -553,49 +579,24 @@ public class CaneHarvester {
 
         }
     };
-    Runnable afterRejoin2 = new Runnable() {
-        @Override
-        public void run() {
+    Runnable afterRejoin2 = () -> {
 
-            KeyBinding.setKeyBindState(keyBindSneak, false);
+        KeyBinding.setKeyBindState(keyBindSneak, false);
 
 
-            mc.inGameHasFocus = true;
-            mouseHelper.grabMouseCursor();
-            mc.displayGuiScreen((GuiScreen) null);
-            Field f = null;
-            f = FieldUtils.getDeclaredField(mc.getClass(), "leftClickCounter", true);
-            try {
-                f.set(mc, 10000);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            enabled = true;
-           // ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
+        mc.inGameHasFocus = true;
+        mouseHelper.grabMouseCursor();
+        mc.displayGuiScreen((GuiScreen) null);
+        Field f = null;
+        f = FieldUtils.getDeclaredField(mc.getClass(), "leftClickCounter", true);
+        try {
+            f.set(mc, 10000);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        enabled = true;
     };
-
-
-    @SubscribeEvent
-    public void OnKeyPress(InputEvent.KeyInputEvent event) {
-
-        if (!rotating) {
-            if (customKeyBinds[1].isPressed()) {
-                if (!enabled)
-                    Utils.addCustomChat("Starting script");
-
-                toggle();
-            }
-            if (customKeyBinds[0].isPressed()) {
-                mc.displayGuiScreen(new GUI());
-            }
-
-
-        }
-
-
-    }
 
     Runnable EMERGENCY = new Runnable() {
         @Override
@@ -616,43 +617,34 @@ public class CaneHarvester {
         }
     };
 
-    Runnable SHUTDOWN = new Runnable() {
-        @Override
-        public void run() {
-            mc.shutdown();
+    Runnable SHUTDOWN = () -> mc.shutdown();
+
+    Runnable UnStuck = () -> {
+        try {
+            Utils.addCustomChat("Detected stuck");
+            Utils.addCustomLog("DeltaX : " + deltaX + " DeltaZ : " + deltaZ);
+            Utils.addCustomLog("BeforeX : " + beforeX + " BeforeZ : " + beforeZ);
+            Thread.sleep(100);
+            KeyBinding.setKeyBindState(keybindD, true);
+            Thread.sleep(200);
+            KeyBinding.setKeyBindState(keybindD, false);
+            KeyBinding.setKeyBindState(keybindA, true);
+            Thread.sleep(200);
+            KeyBinding.setKeyBindState(keybindA, false);
+            KeyBinding.setKeyBindState(keybindS, true);
+            Thread.sleep(200);
+            KeyBinding.setKeyBindState(keybindS, false);
+            KeyBinding.setKeyBindState(keybindW, true);
+            Thread.sleep(200);
+            KeyBinding.setKeyBindState(keybindW, false);
+            deltaX = 100;
+            deltaZ = 100;
+            stuck = false;
+            enabled = true;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     };
-
-    Runnable UnStuck = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                Utils.addCustomChat("Detected stuck");
-                Utils.addCustomLog("DeltaX : " + deltaX + " DeltaZ : " + deltaZ);
-                Utils.addCustomLog("BeforeX : " + beforeX + " BeforeZ : " + beforeZ);
-                Thread.sleep(100);
-                KeyBinding.setKeyBindState(keybindD, true);
-                Thread.sleep(200);
-                KeyBinding.setKeyBindState(keybindD, false);
-                KeyBinding.setKeyBindState(keybindA, true);
-                Thread.sleep(200);
-                KeyBinding.setKeyBindState(keybindA, false);
-                KeyBinding.setKeyBindState(keybindS, true);
-                Thread.sleep(200);
-                KeyBinding.setKeyBindState(keybindS, false);
-                KeyBinding.setKeyBindState(keybindW, true);
-                Thread.sleep(200);
-                KeyBinding.setKeyBindState(keybindW, false);
-                deltaX = 100;
-                deltaZ = 100;
-                stuck = false;
-                enabled = true;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    };
-
 
 
     void toggle() {
@@ -711,18 +703,15 @@ public class CaneHarvester {
         initialX = mc.thePlayer.posX;
         initialZ = mc.thePlayer.posZ;
         walkForwardDis = 5.9f;
-
-
-        cycles = 0;
         rotating = false;
 
     }
 
     void updateKeybinds(boolean forward, boolean backward, boolean left, boolean right) {
-        KeyBinding.setKeyBindState(keybindW ,forward);
-        KeyBinding.setKeyBindState(keybindA ,left);
-        KeyBinding.setKeyBindState(keybindD ,right);
-        KeyBinding.setKeyBindState(keybindS ,backward);
+        KeyBinding.setKeyBindState(keybindW, forward);
+        KeyBinding.setKeyBindState(keybindA, left);
+        KeyBinding.setKeyBindState(keybindD, right);
+        KeyBinding.setKeyBindState(keybindS, backward);
     }
 
     location getLocation() {
@@ -738,7 +727,7 @@ public class CaneHarvester {
     }
 
     direction calculateDirection() {
-        ArrayList<Integer> unwalkableBlocks = new ArrayList<Integer>();
+        ArrayList<Integer> unwalkableBlocks = new ArrayList<>();
         if (mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock().equals(Blocks.end_portal_frame)) {
             for (int i = -3; i < 3; i++) {
                 if (!Utils.isWalkable(Utils.getBlockAround(i, 0, 1))) {
@@ -753,25 +742,25 @@ public class CaneHarvester {
             }
         }
 
-        if(unwalkableBlocks.size() == 0)
+        if (unwalkableBlocks.size() == 0)
             return direction.RIGHT;
         else if (unwalkableBlocks.size() > 1 && hasPosAndNeg(unwalkableBlocks)) {
             return direction.NONE;
-        }
-        else if (unwalkableBlocks.get(0) > 0)
+        } else if (unwalkableBlocks.get(0) > 0)
             return direction.LEFT;
         else
             return direction.RIGHT;
     }
 
-    boolean shouldWalkForward(){
+    boolean shouldWalkForward() {
         return (Utils.isWalkable(Utils.getBackBlock()) && Utils.isWalkable(Utils.getFrontBlock())) ||
                 (!Utils.isWalkable(Utils.getBackBlock()) && !Utils.isWalkable(Utils.getLeftBlock())) ||
                 (!Utils.isWalkable(Utils.getBackBlock()) && !Utils.isWalkable(Utils.getRightBlock())) ||
                 (!Utils.isWalkable(Utils.getFrontBlock()) && !Utils.isWalkable(Utils.getRightBlock())) ||
                 (!Utils.isWalkable(Utils.getFrontBlock()) && !Utils.isWalkable(Utils.getLeftBlock()));
     }
-    boolean hasPosAndNeg(ArrayList<Integer> ar){
+
+    boolean hasPosAndNeg(ArrayList<Integer> ar) {
         boolean hasPos = false;
         boolean hasNeg = false;
         for (Integer integer : ar) {
@@ -781,6 +770,34 @@ public class CaneHarvester {
                 hasPos = true;
         }
         return hasPos && hasNeg;
+
+    }
+
+    int getDensityPercentage(direction oppositeDir) {
+        try {
+            ArrayList<Block> blocks = new ArrayList<>();
+            if (oppositeDir == direction.LEFT) {
+                for (int i = 0; i < 4; i++)
+                    blocks.add(Utils.getBlockAround(i, 0, 1));
+            } else {
+                for (int i = 0; i < 4; i++)
+                    blocks.add(Utils.getBlockAround(-i, 0, 1));
+            }
+
+            int totalBlock = blocks.size();
+            int totalSugarcaneBlock = 0;
+            for (Block block : blocks) {
+                if (block.equals(Blocks.reeds))
+                    totalSugarcaneBlock++;
+            }
+            if(totalSugarcaneBlock == 0 || totalBlock == 0)
+                return 0;
+
+            return (int) (totalSugarcaneBlock / (totalBlock * 1.0d) * 100);
+        } catch (Exception e) {
+
+        }
+        return -1;
 
     }
 }
