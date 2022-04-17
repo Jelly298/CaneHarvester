@@ -227,7 +227,7 @@ public class CaneHarvester {
                 initializeVaraibles();
                 Utils.addCustomLog("Going : " + calculateDirection());
                 locked = true;
-                ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
+                //ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
             }
 
             if(blockIn == Blocks.end_portal_frame && mc.thePlayer.posX != initialX && mc.thePlayer.posZ != initialZ){
@@ -244,7 +244,7 @@ public class CaneHarvester {
 
             }
             //antistuck
-            if (deltaX < 0.2d && deltaZ < 0.2d && deltaY < 0.0001d && !inFailsafe && !stuck) {
+            /*if (deltaX < 0.2d && deltaZ < 0.2d && deltaY < 0.0001d && !inFailsafe && !stuck) {
                 Utils.addCustomChat("Detected stuck");
                 stuck = true;
 
@@ -283,7 +283,7 @@ public class CaneHarvester {
                     }
                 }).start();
 
-            }
+            }*/
 
             //bedrock failsafe
 
@@ -403,7 +403,7 @@ public class CaneHarvester {
         }
     };
 
-    Runnable checkChange = new Runnable() {
+    /*Runnable checkChange = new Runnable() {
         @Override
         public void run() {
 
@@ -421,7 +421,7 @@ public class CaneHarvester {
             }
 
         }
-    };
+    };*/
 
     Runnable changeLayer = new Runnable() {
         @Override
@@ -540,7 +540,7 @@ public class CaneHarvester {
             }
 
             enabled = true;
-            ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
+           // ScheduleRunnable(checkChange, 3, TimeUnit.SECONDS);
         }
     };
 
