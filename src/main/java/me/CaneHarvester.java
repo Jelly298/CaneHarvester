@@ -441,7 +441,9 @@ public class CaneHarvester {
         @Override
         public void run() {
             try {
+                Utils.addCustomChat("Initializing resync...");
                 if (rotating || walkingForward || stuck || inFailsafe || currentDirection == direction.NONE) {
+                    Utils.addCustomChat("Can't resync now");
                     return;
                 }
 
@@ -528,7 +530,8 @@ public class CaneHarvester {
     };
 
     Runnable checkDensity = () -> {
-        if(getDensityPercentage(currentDirection) > 80){
+        Utils.addCustomLog("Checking density : " + getDensityPercentage(currentDirection));
+        if(getDensityPercentage(currentDirection) > 49){
             ExecuteRunnable(reSync);
         }
     };
