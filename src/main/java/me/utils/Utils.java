@@ -2,6 +2,7 @@ package me.utils;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import me.config.Config;
 import me.gui.GUI;
 import me.webhook.DiscordWebhook;
 import net.minecraft.block.Block;
@@ -285,8 +286,8 @@ public class Utils {
     public static void sendWebhook(String context){
         new Thread(() -> {
             try{
-                DiscordWebhook webhook = new DiscordWebhook(GUI.getWebhookURL());
-                if (!Objects.equals(GUI.getWebhookURL(), "")) {
+                DiscordWebhook webhook = new DiscordWebhook(Config.urlText);
+                if (!Objects.equals(Config.urlText, "")) {
                     webhook.setContent(context);
                     webhook.execute();
                 }

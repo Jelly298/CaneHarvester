@@ -18,7 +18,7 @@ public class GUI extends GuiScreen {
     int fieldHeight = 20;
 
     private GuiTextField urlTextBox;
-    static String urlText;
+
 
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
@@ -32,15 +32,11 @@ public class GUI extends GuiScreen {
 
         urlTextBox = new GuiTextField(1, Minecraft.getMinecraft().fontRendererObj, this.width/2 - fieldWidth / 2 + 30 , this.height / 2 - fieldHeight / 2 + 60, fieldWidth, fieldHeight);
         urlTextBox.setMaxStringLength(256);
-        urlTextBox.setText(getWebhookURL());
+        urlTextBox.setText(Config.urlText);
         urlTextBox.setFocused(true);
         this.buttonList.add(new GuiBetterButton(0, this.width/2 - buttonWidth /2 ,  this.height/2 - buttonHeight /2, buttonWidth, buttonHeight, "Resync : " + (Config.resync ? "on" : "off")));
 
 
-    }
-
-    public static String getWebhookURL(){
-        return urlText == null ? "" : urlText;
     }
 
 
@@ -95,7 +91,8 @@ public class GUI extends GuiScreen {
     }
     @Override
     public void onGuiClosed(){
-        urlText = urlTextBox.getText();
+        Config.urlText = urlTextBox.getText();
+        Config.writeConfig();
     }
 
 

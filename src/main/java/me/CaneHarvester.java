@@ -1,5 +1,6 @@
 package me;
 
+import me.config.Config;
 import me.gui.GUI;
 import me.utils.Utils;
 import me.webhook.DiscordWebhook;
@@ -135,6 +136,11 @@ public class CaneHarvester {
         customKeyBinds[1] = new KeyBinding("Toggle script", Keyboard.KEY_GRAVE, "CaneHarvester");
         ClientRegistry.registerKeyBinding(customKeyBinds[0]);
         ClientRegistry.registerKeyBinding(customKeyBinds[1]);
+        try{
+            Config.readConfig();
+        }catch(Exception e){
+            Config.writeConfig();
+        }
         ExecuteRunnable(checkPriceChange);
 
     }
@@ -154,16 +160,20 @@ public class CaneHarvester {
         if (event.message.getFormattedText().contains("You were spawned in Limbo") && !inFailsafe && enabled) {
             activateFailsafe();
             ScheduleRunnable(LeaveSBIsand, 8, TimeUnit.SECONDS);
+            Utils.sendWebhook("Limbo detected. Applying failsafe");
 
         }
         if ((event.message.getFormattedText().contains("Sending to server") && !inFailsafe && enabled)) {
             activateFailsafe();
             ScheduleRunnable(WarpHome, 10, TimeUnit.SECONDS);
+            Utils.sendWebhook("Hub detected. Applying failsafe");
         }
         if ((event.message.getFormattedText().contains("DYNAMIC") || (event.message.getFormattedText().contains("Couldn't warp you")) && inFailsafe)) {
+            Utils.sendWebhook("Error while warping. Applying failsafe");
             error = true;
         }
         if ((event.message.getFormattedText().contains("SkyBlock Lobby") && !inFailsafe && enabled)) {
+            Utils.sendWebhook("Lobby detected. Applying failsafe");
             activateFailsafe();
             ScheduleRunnable(LeaveSBIsand, 10, TimeUnit.SECONDS);
         }
@@ -213,7 +223,6 @@ public class CaneHarvester {
                         toggle();
                     } else {
                         Utils.addCustomChat("Wrong location detected");
-                        Utils.sendWebhook("Wrong location");
                     }
                 } else
                     toggle();
@@ -436,6 +445,7 @@ public class CaneHarvester {
                 }
 
                 Utils.addCustomChat("Resyncing...");
+                Utils.sendWebhook("Detected desync. Resyncing...");
                 Thread.sleep(350);
                 activateFailsafe();
                 Thread.sleep(650);
@@ -604,13 +614,8 @@ public class CaneHarvester {
             KeyBinding.setKeyBindState(keybindW, false);
             KeyBinding.setKeyBindState(keybindD, false);
             KeyBinding.setKeyBindState(keybindS, false);
-
-            // mc.thePlayer.addChatMessage(ScreenShotHelper.saveScreenshot(mc.mcDataDir, mc.displayWidth, mc.displayHeight, mc.getFramebuffer()));
-
-            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-            executor.schedule(SHUTDOWN, 4123, TimeUnit.MILLISECONDS);
-
-
+            Utils.sendWebhook("Cage detected. Applying failsafe and closing minecraft");
+            ScheduleRunnable(SHUTDOWN, 4123, TimeUnit.MILLISECONDS);
         }
     };
 
@@ -619,6 +624,7 @@ public class CaneHarvester {
     Runnable UnStuck = () -> {
         try {
             Utils.addCustomChat("Detected stuck");
+            Utils.sendWebhook("Detected stuck");
             Utils.addCustomLog("DeltaX : " + deltaX + " DeltaZ : " + deltaZ);
             Utils.addCustomLog("BeforeX : " + beforeX + " BeforeZ : " + beforeZ);
             Thread.sleep(100);
