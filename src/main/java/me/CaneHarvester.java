@@ -2,6 +2,7 @@ package me;
 
 import me.gui.GUI;
 import me.utils.Utils;
+import me.webhook.DiscordWebhook;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiDisconnected;
@@ -84,6 +85,7 @@ public class CaneHarvester {
     public int keybindAttack = mc.gameSettings.keyBindAttack.getKeyCode();
     public int keybindUseItem = mc.gameSettings.keyBindUseItem.getKeyCode();
     public int keyBindSneak = mc.gameSettings.keyBindSneak.getKeyCode();
+
 
     static KeyBinding[] customKeyBinds = new KeyBinding[2];
 
@@ -173,23 +175,6 @@ public class CaneHarvester {
     @SubscribeEvent
     public void render(RenderGameOverlayEvent event) {
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
-
-           /* mc.fontRendererObj.drawString("InitialX/Z : " + initialX + "/" + initialZ, 4, 4, -1);
-            mc.fontRendererObj.drawString("MC X/Y/Z " + mc.thePlayer.posX + "/" + mc.thePlayer.posY + "/" + mc.thePlayer.posZ, 4, 16, -1);
-            mc.fontRendererObj.drawString("KeyBindW : " + (mc.gameSettings.keyBindForward.isKeyDown() ? "Pressed" : "Not pressed"), 4, 28, -1);
-            mc.fontRendererObj.drawString("KeyBindS : " + (mc.gameSettings.keyBindBack.isKeyDown() ? "Pressed" : "Not pressed"), 4, 40, -1);
-            mc.fontRendererObj.drawString("KeyBindA : " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, 52, -1);
-            mc.fontRendererObj.drawString("KeyBindD : " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, 64, -1);
-            mc.fontRendererObj.drawString("Walking forward : " + walkingForward, 4, 76, -1);
-            mc.fontRendererObj.drawString("Angle : " + playerYaw, 4, 88, -1);
-            mc.fontRendererObj.drawString("Minecraft yaw : " + mc.thePlayer.rotationYaw, 4, 100, -1);
-
-            try {
-                mc.fontRendererObj.drawString("Scoreboard line 6  : " + Minecraft.getMinecraft().theWorld.getScoreboard().getObjectiveInDisplaySlot(6).getDisplayName(), 4, 88, -1);
-            }catch(Exception e){
-
-            }*/
-
             Utils.drawStringWithShadow(
                     EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD + "PROFIT CALCULATOR" + EnumChatFormatting.GRAY + "--", 4, 25, 0.8f, -1);
             Utils.drawStringWithShadow(
@@ -209,7 +194,6 @@ public class CaneHarvester {
                     EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Enchanted sugar cane : " + EnumChatFormatting.GREEN + Utils.formatNumber(totalDEsc), 4, 120, 0.8f, -1);
             Utils.drawStringWithShadow(
                     EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Total inventory price : " + EnumChatFormatting.GREEN + "$" + Utils.formatNumber(totalMoney), 4, 130, 0.8f, -1);
-            Utils.drawString("Density : " + Integer.toString(getDensityPercentage(direction.RIGHT)), 4, 150, 1, -1);
 
 
         }
@@ -227,8 +211,10 @@ public class CaneHarvester {
                     if (getLocation() == location.ISLAND) {
                         Utils.addCustomChat("Starting script");
                         toggle();
-                    } else
+                    } else {
                         Utils.addCustomChat("Wrong location detected");
+                        Utils.sendWebhook("Wrong location");
+                    }
                 } else
                     toggle();
 
@@ -310,6 +296,7 @@ public class CaneHarvester {
                     ScheduleRunnable(checkPosChange, 8, TimeUnit.SECONDS);
                 }
 
+                //TP pad
                 if (blockIn == Blocks.end_portal_frame && mc.thePlayer.posX != initialX && mc.thePlayer.posZ != initialZ) {
                     inTPPad = true;
                     Utils.addCustomChat("TP pad detected", EnumChatFormatting.BLUE);

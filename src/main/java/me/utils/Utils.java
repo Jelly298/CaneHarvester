@@ -2,6 +2,8 @@ package me.utils;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import me.gui.GUI;
+import me.webhook.DiscordWebhook;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -17,10 +19,7 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -282,6 +281,20 @@ public class Utils {
         String s = Integer.toString(number);
         return String.format("%,d", number);
 
+    }
+    public static void sendWebhook(String context){
+        new Thread(() -> {
+            try{
+                DiscordWebhook webhook = new DiscordWebhook(GUI.getWebhookURL());
+                if (!Objects.equals(GUI.getWebhookURL(), "")) {
+                    webhook.setContent(context);
+                    webhook.execute();
+                }
+            }catch(Exception e){
+                Utils.addCustomLog("Error when sending webhook");
+                e.printStackTrace();
+            }
+        }).start();
     }
 
 
