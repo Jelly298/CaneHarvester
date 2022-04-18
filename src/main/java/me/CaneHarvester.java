@@ -96,7 +96,6 @@ public class CaneHarvester {
     static volatile int totalMoney = 0;
     static volatile int prevMoney = -999;
 
-    static volatile boolean checkingPos = false;
 
     static volatile int moneyper10sec = 0;
 
@@ -142,6 +141,7 @@ public class CaneHarvester {
             Config.writeConfig();
         }
         ExecuteRunnable(checkPriceChange);
+        ExecuteRunnable(checkPosChange);
 
     }
 
@@ -302,7 +302,6 @@ public class CaneHarvester {
                     Utils.addCustomLog("Going : " + calculateDirection());
                     walkForwardDis = calculateDirection() == direction.NONE ? 1.1f : 5.9f;
                     locked = true;
-                    ScheduleRunnable(checkPosChange, 8, TimeUnit.SECONDS);
                 }
 
                 //TP pad
@@ -459,25 +458,18 @@ public class CaneHarvester {
     Runnable checkPosChange = new Runnable() {
         @Override
         public void run() {
-            if (checkingPos)
-                return;
             try {
-                checkingPos = true;
-                if (!inFailsafe && enabled) {
-                    deltaX = Math.abs(mc.thePlayer.posX - beforeX);
-                    deltaZ = Math.abs(mc.thePlayer.posZ - beforeZ);
-                    deltaY = Math.abs(mc.thePlayer.posY - beforeY);
-                    beforeX = mc.thePlayer.posX;
-                    beforeZ = mc.thePlayer.posZ;
-                    beforeY = mc.thePlayer.posY;
-                    Thread.sleep(8000);
-                }
+                deltaX = Math.abs(mc.thePlayer.posX - beforeX);
+                deltaZ = Math.abs(mc.thePlayer.posZ - beforeZ);
+                deltaY = Math.abs(mc.thePlayer.posY - beforeY);
+                Thread.sleep(500);
+                beforeX = mc.thePlayer.posX;
+                beforeZ = mc.thePlayer.posZ;
+                beforeY = mc.thePlayer.posY;
+                Thread.sleep(7500);
             } catch(Exception e){
-                e.printStackTrace();
             } finally {
-                checkingPos = false;
-                if(!inFailsafe && enabled)
-                    ExecuteRunnable(checkPosChange);
+                ExecuteRunnable(checkPosChange);
             }
         }
     };
@@ -627,6 +619,7 @@ public class CaneHarvester {
             Utils.sendWebhook("Detected stuck");
             Utils.addCustomLog("DeltaX : " + deltaX + " DeltaZ : " + deltaZ);
             Utils.addCustomLog("BeforeX : " + beforeX + " BeforeZ : " + beforeZ);
+            Utils.addCustomLog("BeforeX : " + " BeforeZ : " + beforeZ);
             Thread.sleep(100);
             KeyBinding.setKeyBindState(keybindD, true);
             Thread.sleep(200);
