@@ -32,6 +32,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
+import scala.Int;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -229,7 +230,8 @@ public class CaneHarvester {
 
             }
             if (customKeyBinds[0].isPressed()) {
-                mc.displayGuiScreen(new GUI());
+                Utils.addCustomLog(Integer.toString(getJacobEventCounter()));
+              // mc.displayGuiScreen(new GUI());
             }
         }
     }
@@ -720,6 +722,20 @@ public class CaneHarvester {
             }
         }
         return location.LOBBY;
+    }
+
+    int getJacobEventCounter(){
+        try {
+            for (String line : Utils.getSidebarLines()) {
+                String cleanedLine = Utils.cleanSB(line);
+                if (cleanedLine.contains("with")) {
+                    return Integer.parseInt(cleanedLine.substring(cleanedLine.lastIndexOf(" ") + 1).replace(",", ""));
+                }
+
+            }
+        }catch(Exception e) {
+        }
+        return 0;
     }
 
     direction calculateDirection() {
