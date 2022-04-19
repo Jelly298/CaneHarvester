@@ -236,7 +236,7 @@ public class CaneHarvester {
         }
     }
 
-
+    //
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void OnTickPlayer(TickEvent.ClientTickEvent event) { //Client -> player
 
@@ -516,7 +516,7 @@ public class CaneHarvester {
                 while (Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2))));
 
                 updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
-                ScheduleRunnable(checkDensity, 1, TimeUnit.SECONDS);
+                ScheduleRunnable(checkDensity, 3, TimeUnit.SECONDS);
 
 
             } catch (Exception e) {
@@ -789,10 +789,10 @@ public class CaneHarvester {
         try {
             ArrayList<Block> blocks = new ArrayList<>();
             if (oppositeDir == direction.LEFT) {
-                for (int i = 0; i < 4; i++)
+                for (int i = 3; i < 6; i++)
                     blocks.add(Utils.getBlockAround(i, 0, 1));
             } else {
-                for (int i = 0; i < 4; i++)
+                for (int i = 3; i < 6; i++)
                     blocks.add(Utils.getBlockAround(-i, 0, 1));
             }
 
