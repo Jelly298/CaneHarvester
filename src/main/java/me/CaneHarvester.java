@@ -516,7 +516,7 @@ public class CaneHarvester {
                 while (Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2))));
 
                 updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
-                ScheduleRunnable(checkDensity, 3, TimeUnit.SECONDS);
+                ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
 
 
             } catch (Exception e) {
