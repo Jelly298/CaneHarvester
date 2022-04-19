@@ -87,7 +87,7 @@ public class GUI extends GuiScreen {
             if(urlTextBox.isFocused())
                 urlTextBox.textboxKeyTyped(par1, par2);
             if(jacobThresholdBox.isFocused()) {
-                if(Character.isDigit(par1))
+                if(Character.isDigit(par1) || par2 == 14) //14 -> delete key code
                 jacobThresholdBox.textboxKeyTyped(par1, par2);
             }
         }catch (Exception e){
@@ -123,8 +123,8 @@ public class GUI extends GuiScreen {
     }
     @Override
     public void onGuiClosed(){
-        Config.urlText = urlTextBox.getText();
-        Config.jacobThreshold = jacobThresholdBox.getText();
+        Config.urlText = urlTextBox.getText().trim();
+        Config.jacobThreshold = jacobThresholdBox.getText().trim();
         Config.writeConfig();
     }
 
