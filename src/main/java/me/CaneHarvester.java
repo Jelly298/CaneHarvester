@@ -3,15 +3,17 @@ package me;
 import me.config.Config;
 import me.gui.GUI;
 import me.utils.Utils;
-import me.webhook.DiscordWebhook;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiDisconnected;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.*;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
@@ -32,7 +34,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
-import scala.Int;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -65,6 +66,8 @@ public class CaneHarvester {
     volatile static boolean setcycled = false;
     volatile static boolean stuck = false;
     volatile static boolean rotating = false;
+    volatile static boolean caged = false;
+    volatile static boolean hubCaged;
 
 
     public volatile static double beforeX = 0;
@@ -78,7 +81,6 @@ public class CaneHarvester {
     public static float walkForwardDis = 5.9f;
     public static location currentLocation;
 
-    public static boolean openedGUI = false;
 
     public int keybindA = mc.gameSettings.keyBindLeft.getKeyCode();
     public int keybindD = mc.gameSettings.keyBindRight.getKeyCode();
@@ -88,6 +90,8 @@ public class CaneHarvester {
     public int keybindUseItem = mc.gameSettings.keyBindUseItem.getKeyCode();
     public int keyBindSneak = mc.gameSettings.keyBindSneak.getKeyCode();
 
+    static volatile boolean bazaarLag = false;
+
 
     static KeyBinding[] customKeyBinds = new KeyBinding[2];
 
@@ -95,14 +99,19 @@ public class CaneHarvester {
     static volatile int totalEsc = 0;
     static volatile int totalDEsc = 0;
     static volatile int totalMoney = 0;
-    static volatile int prevMoney = -999;
 
 
-    static volatile int moneyper10sec = 0;
+    static volatile int lastCounter = 0;
+    static volatile int moneypersec = 0;
+
+    long startTime = 0;
+    long finalTime = 0;
 
     MouseHelper mouseHelper = new MouseHelper();
     static int playerYaw = 0;
     private static Logger logger;
+
+
 
 
     enum direction {
@@ -141,7 +150,6 @@ public class CaneHarvester {
         }catch(Exception e){
             Config.writeConfig();
         }
-        ExecuteRunnable(checkPriceChange);
         ExecuteRunnable(checkPosChange);
 
     }
@@ -178,6 +186,9 @@ public class CaneHarvester {
             activateFailsafe();
             ScheduleRunnable(LeaveSBIsand, 10, TimeUnit.SECONDS);
         }
+        if (event.message.getFormattedText().contains("This server is too laggy")) {
+            bazaarLag = true;
+        }
 
 
     }
@@ -189,13 +200,13 @@ public class CaneHarvester {
             Utils.drawStringWithShadow(
                     EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD + "PROFIT CALCULATOR" + EnumChatFormatting.GRAY + "--", 4, 25, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/min : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneyper10sec * 6), 4, 40, 0.8f, -1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/min : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneypersec * 60), 4, 40, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneyper10sec * 6 * 60), 4, 50, 0.8f, -1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneypersec * 60 * 60), 4, 50, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/12hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneyper10sec * 6 * 60 * 12), 4, 60, 0.8f, -1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/12hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneypersec * 60 * 60 * 12), 4, 60, 0.8f, -1);
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/24hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneyper10sec * 6 * 60 * 24), 4, 70, 0.8f, -1);
+                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/24hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24), 4, 70, 0.8f, -1);
 
             Utils.drawStringWithShadow(
                     EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD + "INVENTORY INFORMATION" + EnumChatFormatting.GRAY + "--", 4, 95, 0.8f, -1);
@@ -230,8 +241,7 @@ public class CaneHarvester {
 
             }
             if (customKeyBinds[0].isPressed()) {
-                Utils.addCustomLog(Integer.toString(getJacobEventCounter()));
-              // mc.displayGuiScreen(new GUI());
+               mc.displayGuiScreen(new GUI());
             }
         }
     }
@@ -245,6 +255,7 @@ public class CaneHarvester {
 
         // profit calculator && angle caculation
         if (mc.thePlayer != null && mc.theWorld != null) {
+
             currentLocation = getLocation();
             if (!rotating)
                 playerYaw = Math.round(Utils.get360RotationYaw() / 90) < 4 ? Math.round(Utils.get360RotationYaw() / 90) * 90 : 0;
@@ -270,13 +281,40 @@ public class CaneHarvester {
             totalEsc = tempEsc;
             totalSc = tempsc;
             totalMoney = tempDEsc * 51200 + tempEsc * 320 + tempsc * 2;
+            if (caged) {
+                if (currentLocation == location.HUB) {
+                    if (!hubCaged) {
+                        hubCaged = true;
+                        Utils.addCustomLog("Bedrock cage - At hub, going to buy from bazaar");
+                        ExecuteRunnable(hubCage);
+                    }
+                }
+                return;
+            }
+            if(TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) > 1000){
+                moneypersec = (int) ((getHoeCounter() - lastCounter) / (160 * 160 * 1.0d) * 51200);
+                lastCounter = getHoeCounter();
+                startTime = System.nanoTime();
+            }
+
+
+
 
         }
 
         //script code
         if (enabled && mc.thePlayer != null && mc.theWorld != null) {
 
+
             if (getLocation() == location.ISLAND) {
+                if(!rotating){
+                    try {
+                        if (getJacobEventCounter() > 500000) {
+                            ExecuteRunnable(JacobFailsafe);
+                        }
+                    }catch(Exception e){
+                    }
+                }
 
                 //always
                 Block blockIn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock();
@@ -291,6 +329,8 @@ public class CaneHarvester {
                 mc.gameSettings.pauseOnLostFocus = false;
                 mc.thePlayer.inventory.currentItem = 0;
                 mc.gameSettings.gammaSetting = 100;
+
+
 
                 //angles (locked)
                 if (!inFailsafe) {
@@ -328,13 +368,12 @@ public class CaneHarvester {
                 }
 
                 //bedrock failsafe
-
-                if (blockStandingOn == Blocks.bedrock) {
+                if (blockStandingOn == Blocks.bedrock && !inFailsafe && !caged && bedrockCount() > 1) {
+                    enabled = false;
                     KeyBinding.setKeyBindState(keybindAttack, false);
-
-                    ScheduleRunnable(EMERGENCY, 200, TimeUnit.MILLISECONDS);
+                    ScheduleRunnable(islandCage, 157, TimeUnit.MILLISECONDS);
                     inFailsafe = true;
-
+                    caged = true;
                 }
 
                 //states
@@ -410,8 +449,9 @@ public class CaneHarvester {
                     walkingForward = false;
                 }
             } else {
-                unpressKeybinds();
-
+                if(!caged) {
+                    unpressKeybinds();
+                }
             }
         } else {
             locked = false;
@@ -419,22 +459,26 @@ public class CaneHarvester {
 
 
     }
-
-
     //multi-threads
 
-    Runnable checkPriceChange = new Runnable() {
+    Runnable JacobFailsafe = new Runnable() {
         @Override
         public void run() {
+            try {
+                Utils.addCustomChat("Crop limit reached. Preparing to warp to lobby...");
+                int waitTime = getRemainingJacobTime();
+                Utils.sendWebhook("Crop limit reached. Waiting " + waitTime + " seconds");
+                activateFailsafe();
+                Utils.addCustomLog("Waiting " + waitTime + " seconds");
+                ScheduleRunnable(LeaveSBIsand, waitTime, TimeUnit.SECONDS);
+                Thread.sleep(1000);
+                mc.thePlayer.sendChatMessage("/lobby");
+            } catch (Exception e) {
+                e.printStackTrace();
 
-            if (!(prevMoney == -999) && (totalMoney - prevMoney >= 0)) {
-                moneyper10sec = totalMoney - prevMoney;
             }
-            prevMoney = totalMoney;
-            ScheduleRunnable(checkPriceChange, 10, TimeUnit.SECONDS);
         }
     };
-
     Runnable reSync = new Runnable() {
         @Override
         public void run() {
@@ -534,6 +578,7 @@ public class CaneHarvester {
         }
     };
 
+
     Runnable LeaveSBIsand = new Runnable() {
         @Override
         public void run() {
@@ -599,21 +644,82 @@ public class CaneHarvester {
         enabled = true;
     };
 
-    Runnable EMERGENCY = new Runnable() {
-        @Override
-        public void run() {
 
-            KeyBinding.setKeyBindState(keybindAttack, false);
-            KeyBinding.setKeyBindState(keybindA, false);
-            KeyBinding.setKeyBindState(keybindW, false);
-            KeyBinding.setKeyBindState(keybindD, false);
-            KeyBinding.setKeyBindState(keybindS, false);
-            Utils.sendWebhook("Cage detected. Applying failsafe and closing minecraft");
-            ScheduleRunnable(SHUTDOWN, 4123, TimeUnit.MILLISECONDS);
+    Runnable islandCage = () -> {
+        try {
+            Utils.addCustomLog("Cage detected");
+            Utils.sendWebhook("Cage detected. Applying failsafes");
+            Thread.sleep(400);
+            updateKeybinds(false, false, false, false);
+            Thread.sleep(800);
+            updateKeybinds(false, false, true, false);
+            Utils.sineRotateCW(45, 0.4);
+            Thread.sleep(100);
+            updateKeybinds(false, false, false, false);
+            Thread.sleep(1500);
+            Utils.sineRotateAWC(84, 0.5);
+            updateKeybinds(false, false, false, true);
+            Thread.sleep(100);
+            updateKeybinds(false, false, false, false);
+            Thread.sleep(500);
+            updateKeybinds(false, false, false, false);
+            mc.thePlayer.sendChatMessage("/hub");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     };
 
-    Runnable SHUTDOWN = () -> mc.shutdown();
+    Runnable hubCage = () -> {
+        try {
+            Utils.addCustomLog("Waiting till rotate head");
+            Thread.sleep(4000);
+            Utils.smoothRotateAnticlockwise(77, 2);
+            Thread.sleep(1000);
+            updateKeybinds(true, false, false, false);
+            KeyBinding.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), true);
+            while (Utils.getFrontBlock() != Blocks.spruce_stairs) {
+                Utils.addCustomLog("Not reached bazaar");
+                Thread.sleep(50);
+            }
+            KeyBinding.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), false);
+            updateKeybinds(false, false, false, false);
+            KeyBinding.setKeyBindState(keyBindSneak, true);
+            Thread.sleep(300);
+            KeyBinding.setKeyBindState(keyBindSneak, false);
+            bazaarLag = false;
+            while (!(mc.thePlayer.openContainer instanceof ContainerChest) && !bazaarLag) {
+                Utils.addCustomLog("Attempting to open gui");
+                KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), true);
+                Thread.sleep(600);
+                KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false);
+                Thread.sleep(600);
+            }
+            if (mc.thePlayer.openContainer instanceof ContainerChest) {
+                clickWindow(mc.thePlayer.openContainer.windowId, 0);
+                Thread.sleep(1000);
+                clickWindow(mc.thePlayer.openContainer.windowId, 12);
+                Thread.sleep(1000);
+                clickWindow(mc.thePlayer.openContainer.windowId, 10);
+                Thread.sleep(1000);
+                clickWindow(mc.thePlayer.openContainer.windowId, 10);
+                Thread.sleep(1000);
+                clickWindow(mc.thePlayer.openContainer.windowId, 12);
+                Thread.sleep(1000);
+                mc.thePlayer.closeScreen();
+            }
+            bazaarLag = false;
+            Thread.sleep(3000);
+            currentLocation = getLocation();
+            while (currentLocation == location.HUB && caged) {
+                mc.thePlayer.sendChatMessage("/is");
+                ScheduleRunnable(afterRejoin1, 10, TimeUnit.SECONDS);
+                caged = false;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    };
+
 
     Runnable UnStuck = () -> {
         try {
@@ -644,6 +750,22 @@ public class CaneHarvester {
         }
     };
 
+    int bedrockCount() {
+        int r = 4;
+        int count = 0;
+        BlockPos playerPos = Minecraft.getMinecraft().thePlayer.getPosition();
+        playerPos.add(0, 1, 0);
+        Vec3i vec3i = new Vec3i(r, r, r);
+        Vec3i vec3i2 = new Vec3i(r, r, r);
+        for (BlockPos blockPos : BlockPos.getAllInBox(playerPos.add(vec3i), playerPos.subtract(vec3i2))) {
+            IBlockState blockState = Minecraft.getMinecraft().theWorld.getBlockState(blockPos);
+            if (blockState.getBlock() == Blocks.bedrock) {
+                count++;
+            }
+        }
+        Utils.addCustomLog("Counted bedrock: " + count);
+        return count;
+    }
 
     void toggle() {
 
@@ -655,9 +777,9 @@ public class CaneHarvester {
             unpressKeybinds();
         }
         enabled = !enabled;
-        openedGUI = false;
         currentDirection = calculateDirection();
     }
+
 
     void unpressKeybinds() {
         updateKeybinds(false, false, false, false);
@@ -684,26 +806,7 @@ public class CaneHarvester {
         eTemp.shutdown();
     }
 
-    void initializeVaraibles() {
-        deltaX = 10000;
-        deltaZ = 10000;
-        deltaY = 0;
 
-        pushedOff = false;
-        lastLaneDirection = calculateDirection();
-        currentDirection = calculateDirection();
-        inTPPad = false;
-        setcycled = false;
-        inFailsafe = false;
-        walkingForward = false;
-        beforeX = mc.thePlayer.posX;
-        beforeZ = mc.thePlayer.posZ;
-        initialX = mc.thePlayer.posX;
-        initialZ = mc.thePlayer.posZ;
-        walkForwardDis = 5.9f;
-        rotating = false;
-
-    }
 
     void updateKeybinds(boolean forward, boolean backward, boolean left, boolean right) {
         KeyBinding.setKeyBindState(keybindW, forward);
@@ -715,7 +818,7 @@ public class CaneHarvester {
     location getLocation() {
         for (String line : Utils.getSidebarLines()) {
             String cleanedLine = Utils.cleanSB(line);
-            if (cleanedLine.contains("Village")) {
+            if (cleanedLine.contains("Village") || cleanedLine.contains("Bazaar")) {
                 return location.HUB;
             } else if (cleanedLine.contains("Island")) {
                 return location.ISLAND;
@@ -812,4 +915,70 @@ public class CaneHarvester {
         return -1;
 
     }
+    void clickWindow(int windowID, int slotID) {
+        Minecraft mc = Minecraft.getMinecraft();
+        mc.playerController.windowClick(windowID, slotID, 0, 0, mc.thePlayer);
+    }
+    void initializeVaraibles() {
+        deltaX = 10000;
+        deltaZ = 10000;
+        deltaY = 0;
+
+        pushedOff = false;
+        lastLaneDirection = calculateDirection();
+        currentDirection = calculateDirection();
+        inTPPad = false;
+        setcycled = false;
+        inFailsafe = false;
+        walkingForward = false;
+        beforeX = mc.thePlayer.posX;
+        beforeZ = mc.thePlayer.posZ;
+        initialX = mc.thePlayer.posX;
+        initialZ = mc.thePlayer.posZ;
+        walkForwardDis = 5.9f;
+        rotating = false;
+        bazaarLag = false;
+        caged = false;
+        hubCaged = false;
+    }
+    int getHoeCounter() {
+        try {
+            if (mc.thePlayer.getHeldItem().getDisplayName().contains("Turing")) {
+                final ItemStack stack = Minecraft.getMinecraft().thePlayer.getHeldItem();
+                if (stack != null && stack.hasTagCompound()) {
+                    final NBTTagCompound tag = stack.getTagCompound();
+                    if (tag.hasKey("ExtraAttributes", 10)) {
+                        final NBTTagCompound ea = tag.getCompoundTag("ExtraAttributes");
+                        if (ea.hasKey("mined_crops", 99)) {
+                            return ea.getInteger("mined_crops");
+                        } else if (ea.hasKey("farmed_cultivating", 99)) {
+                            return ea.getInteger("farmed_cultivating");
+                        }
+                    }
+                }
+            }
+        } catch(Exception e){
+        }
+        return 0;
+    }
+    int getRemainingJacobTime(){
+        try {
+            String myData = "";
+            for (String line : Utils.getSidebarLines()) {
+                String cleanedLine = Utils.cleanSB(line);
+                if (cleanedLine.contains("Sugar Cane")) {
+                    myData = cleanedLine;
+                }
+            }
+            myData = myData.substring(myData.lastIndexOf(" ") + 1);
+            myData = myData.substring(0, myData.length() - 1);
+            String[] time = myData.split("m");
+            return Integer.parseInt(time[0]) * 60 + Integer.parseInt(time[1]);
+
+        }catch(Exception e) {
+        }
+
+        return 0;
+    }
 }
+

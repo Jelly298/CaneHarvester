@@ -20,7 +20,11 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StringUtils;
 
+import java.awt.*;
+import java.io.IOException;
 import java.util.*;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class Utils {
@@ -83,8 +87,8 @@ public class Utils {
                 (Minecraft.getMinecraft().thePlayer.rotationYaw % 360) :
                 (Minecraft.getMinecraft().thePlayer.rotationYaw < 360f ? 360 - (-Minecraft.getMinecraft().thePlayer.rotationYaw % 360)  :  360 + Minecraft.getMinecraft().thePlayer.rotationYaw);
     }
-    public static float get360RotationYaw(int yaw){
-        return yaw > 0?
+    public static float get360RotationYaw(float yaw) {
+        return yaw > 0 ?
                 (yaw % 360) :
                 (yaw < 360f ? 360 - (-yaw % 360)  :  360 + yaw);
     }
@@ -266,6 +270,24 @@ public class Utils {
         return lines;
     }
 
+    public static void smoothRotateAnticlockwise(final int rotationAnticlockwise360, double speed){
+        new Thread(() -> {
+            int targetYaw = Math.round(get360RotationYaw(get360RotationYaw() - rotationAnticlockwise360));
+            while (get360RotationYaw() != targetYaw) {
+                if (Math.abs(get360RotationYaw() - targetYaw) < 1f*speed) {
+                    Minecraft.getMinecraft().thePlayer.rotationYaw = Math.round(Minecraft.getMinecraft().thePlayer.rotationYaw - Math.abs(get360RotationYaw() - targetYaw));
+                    return;
+                }
+                Minecraft.getMinecraft().thePlayer.rotationYaw -= (0.3f + nextInt(3)/10.0f) * speed;
+                try {
+                    Thread.sleep(1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
     public static String cleanSB(String scoreboard) {
         char[] nvString = StringUtils.stripControlCodes(scoreboard).toCharArray();
         StringBuilder cleaned = new StringBuilder();
@@ -283,21 +305,65 @@ public class Utils {
         return String.format("%,d", number);
 
     }
-    public static void sendWebhook(String context){
+    public static void sendWebhook(String message) {
+
+        DiscordWebhook webhook = new DiscordWebhook(Config.urlText);
+
+
+        webhook.addEmbed(new DiscordWebhook.EmbedObject()
+                .setDescription("**Cane Harvester Log** ```" + message + "```")
+                .setColor(Color.decode("#228B22"))
+                .setFooter(Minecraft.getMinecraft().thePlayer.getName(), "")
+        );
         new Thread(() -> {
-            try{
-                DiscordWebhook webhook = new DiscordWebhook(Config.urlText);
-                if (!Objects.equals(Config.urlText, "")) {
-                    webhook.setContent(context);
-                    webhook.execute();
-                }
-            }catch(Exception e){
-                Utils.addCustomLog("Error when sending webhook");
+            try {
+                webhook.execute();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }).start();
+
+
+
     }
 
+    public static void sineRotateCW(final int rotationClockwise360, double speed) {
+        new Thread(() -> {
+            int targetYaw = (Math.round(get360RotationYaw()) + rotationClockwise360) % 360;
+            while (get360RotationYaw() != targetYaw) {
+                float difference = Math.abs(get360RotationYaw() - targetYaw);
+                if (difference < 0.4f * speed) {
+                    Minecraft.getMinecraft().thePlayer.rotationYaw = Math.round(Minecraft.getMinecraft().thePlayer.rotationYaw + difference);
+                    return;
+                }
+                Minecraft.getMinecraft().thePlayer.rotationYaw += speed * 0.3 * ((difference/rotationClockwise360)+(Math.PI/2));
+                try {
+                    Thread.sleep(1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }).start();
+    }
+    public static void sineRotateAWC(final int rotationAnticlockwise360, double speed){
+        new Thread(() -> {
+            int targetYaw = Math.round(get360RotationYaw(get360RotationYaw() - rotationAnticlockwise360));
+            while (get360RotationYaw() != targetYaw) {
+                float difference = Math.abs(get360RotationYaw() - targetYaw);
+                if (difference < 0.4f * speed) {
+                    Minecraft.getMinecraft().thePlayer.rotationYaw = Math.round(Minecraft.getMinecraft().thePlayer.rotationYaw - difference);
+                    return;
+                }
+                Minecraft.getMinecraft().thePlayer.rotationYaw -= 0.3f + nextInt(3)/10.0f;
+                try {
+                    Thread.sleep(1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
 
 
 
