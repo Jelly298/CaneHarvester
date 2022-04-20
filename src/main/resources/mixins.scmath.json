@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "compatibilityLevel": "JAVA_8",
+  "package": "me.mixins",
+  "refmap": "mixins.scmath.refmap.json",
+  "mixins": [
+    "MixinGuiMainMenu"
+  ]
+}
