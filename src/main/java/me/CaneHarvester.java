@@ -201,12 +201,14 @@ public class CaneHarvester {
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
 
 
+            GUI.drawRect(0,  2, 200, 77, new Color(0, 0, 0, 100).getRGB());
             Utils.drawStringWithShadow(
                     EnumChatFormatting.DARK_GREEN + "« " + EnumChatFormatting.DARK_GREEN + "" + EnumChatFormatting.BOLD + "Cane Harvester" + EnumChatFormatting.DARK_GREEN + " »", 5, 5, 1.2f, -1);
             Utils.drawInfo("Profit/hr", "$" + Utils.formatNumber(moneypersec * 60 * 60), 20);
-            Utils.drawInfo("Profit/24hr", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24), 35);
+            Utils.drawInfo("Profit/24hrs", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24), 35);
             Utils.drawInfo("Inventory price", "$" + Utils.formatNumber(totalMoney), 50);
             Utils.drawInfo("Hoe counter", Utils.formatNumber(getHoeCounter()), 65);
+
 
         }
 

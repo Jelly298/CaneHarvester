@@ -1,6 +1,8 @@
 package me.config;
 
+import com.google.gson.JsonObject;
 import me.gui.GUI;
+import scala.util.parsing.json.JSON;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -11,8 +13,10 @@ public class Config {
     public static boolean resync = false;
     public static String urlText = "";
     public static String jacobThreshold = "";
+
     public static void writeConfig(){
         try {
+
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter("scconfig.txt"));
             bufferedWriter.write("\n" + resync);
             bufferedWriter.write("\n" + urlText);
