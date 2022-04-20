@@ -35,6 +35,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
@@ -196,27 +197,16 @@ public class CaneHarvester {
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
     public void render(RenderGameOverlayEvent event) {
+
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD + "PROFIT CALCULATOR" + EnumChatFormatting.GRAY + "--", 4, 25, 0.8f, -1);
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/min : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneypersec * 60), 4, 40, 0.8f, -1);
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneypersec * 60 * 60), 4, 50, 0.8f, -1);
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/12hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneypersec * 60 * 60 * 12), 4, 60, 0.8f, -1);
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Profit/24hr : " + EnumChatFormatting.GOLD + "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24), 4, 70, 0.8f, -1);
+
 
             Utils.drawStringWithShadow(
-                    EnumChatFormatting.GRAY + "--" + EnumChatFormatting.GOLD + "" + EnumChatFormatting.BOLD + "INVENTORY INFORMATION" + EnumChatFormatting.GRAY + "--", 4, 95, 0.8f, -1);
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Enchanted sugar : " + EnumChatFormatting.GREEN + Utils.formatNumber(totalEsc), 4, 110, 0.8f, -1);
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Enchanted sugar cane : " + EnumChatFormatting.GREEN + Utils.formatNumber(totalDEsc), 4, 120, 0.8f, -1);
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.YELLOW + "" + EnumChatFormatting.BOLD + "Total inventory price : " + EnumChatFormatting.GREEN + "$" + Utils.formatNumber(totalMoney), 4, 130, 0.8f, -1);
-
+                    EnumChatFormatting.DARK_GREEN + "« " + EnumChatFormatting.DARK_GREEN + "" + EnumChatFormatting.BOLD + "Cane Harvester" + EnumChatFormatting.DARK_GREEN + " »", 5, 5, 1.2f, -1);
+            Utils.drawInfo("Profit/hr", "$" + Utils.formatNumber(moneypersec * 60 * 60), 20);
+            Utils.drawInfo("Profit/24hr", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24), 35);
+            Utils.drawInfo("Inventory price", "$" + Utils.formatNumber(totalMoney), 50);
+            Utils.drawInfo("Hoe counter", Utils.formatNumber(getHoeCounter()), 65);
 
         }
 
@@ -296,10 +286,6 @@ public class CaneHarvester {
                 lastCounter = getHoeCounter();
                 startTime = System.nanoTime();
             }
-
-
-
-
         }
 
         //script code
@@ -309,8 +295,10 @@ public class CaneHarvester {
             if (getLocation() == location.ISLAND) {
                 if(!rotating){
                     try {
-                        if (getJacobEventCounter() > 500000) {
-                            ExecuteRunnable(JacobFailsafe);
+                        if(Integer.parseInt(Config.jacobThreshold) != 0) {
+                            if (getJacobEventCounter() > Integer.parseInt(Config.jacobThreshold)) {
+                                ExecuteRunnable(JacobFailsafe);
+                            }
                         }
                     }catch(Exception e){
                     }
