@@ -1,21 +1,28 @@
+
 buildscript {
     repositories {
-        mavenCentral();
+        // mavenCentral();
+        jcenter();
         maven {
             name = "forge"
             url = "http://files.minecraftforge.net/maven"
         }
-        maven { url 'https://repo.spongepowered.org/repository/maven-public/' } //mixin
+        maven {
+            name = "SpongePowered"
+            url = 'https://repo.spongepowered.org/repository/maven-public/'
+        }
     }
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
-        classpath 'org.spongepowered:mixingradle:0.5-SNAPSHOT'
+        classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
     }
 }
+
 plugins {
     id 'java'
 }
+
 apply plugin: 'net.minecraftforge.gradle.forge'
 apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -25,35 +32,28 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-
 version = "1.0"
-group= "com.yourname.modid" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "scmath"
+group= "com.jelly" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "CaneHarvester"
 
 minecraft {
     version = "1.8.9-11.15.1.2318-1.8.9"
     runDir = "run"
     mappings = "stable_20"
     makeObfSourceJar = false
-    clientJvmArgs += ["-Dfml.coreMods.load=me.mixins.MixinLoader"]
 }
 
 repositories {
-    mavenCentral()
     maven {
         name = 'spongepowered-repo'
         url = 'https://repo.spongepowered.org/repository/maven-public/'
     }
+    mavenCentral()
 }
 
 dependencies {
-
-    compile("org.spongepowered:mixin:0.7.4-SNAPSHOT") {
-        exclude module: 'launchwrapper'
-        exclude module: 'guava'
-        exclude module: 'gson'
-        exclude module: 'commons-io'
-    }
+    compile('org.spongepowered:mixin:0.7.11-SNAPSHOT')
+    annotationProcessor('org.spongepowered:mixin:0.7.11-SNAPSHOT')
 }
 
 
@@ -72,28 +72,26 @@ processResources
                 exclude 'mcmod.info'
             }
         }
+
 test {
     systemProperty "file.encoding", "utf-8"
 }
+
 shadowJar {
     dependencies {
-        // mixin
         include(dependency('org.spongepowered:mixin'))
 
     }
-    exclude 'dummyThing', 'LICENSE.txt', 'org/**/*.html', 'META-INF/maven/**' // Removes unneeded files that are legit just useless text files - Perry on reborn
+    exclude 'dummyThing', 'LICENSE.txt', 'org/**/*.html', 'META-INF/maven/**'
     classifier = 'release'
-}
-reobf {
-    shadowJar {
-        mappingType = 'SEARGE'
-        classpath = sourceSets.main.compileClasspath
-    }
 }
 
 mixin {
+    disableTargetExport
+    disableTargetValidator
     defaultObfuscationEnv searge
-    add sourceSets.main, 'mixins.nwmath.refmap.json'
+    add sourceSets.main, 'mixins.scmath.refmap.json'
+   // config 'mixins.refmap.json'
 }
 
 reobf {
@@ -102,18 +100,38 @@ reobf {
         classpath = sourceSets.main.compileClasspath
     }
 }
+
 jar {
     manifest {
         attributes(
                 'MixinConfigs': 'mixins.scmath.json',
-                'tweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
+                'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
                 'TweakOrder': 0,
                 'FMLCorePluginContainsFMLMod': 'true',
                 'FMLCorePlugin': 'me.mixins.MixinLoader',
                 'ForceLoadAsMod': 'true',
-                'FMLAT': 'scmath_at.cfg'
+                'FMLAT': 'scmath.cfg'
         )
     }
 }
+
+sourceJar {
+    enabled = false
+}
+
+ext {
+    mixinSrg = new File(project.buildDir, 'tmp/mixins/mixins.srg')
+    mixinRefMap = new File(project.buildDir, 'tmp/mixins/mixins.scmath.refmap.json')
+}
+
+compileJava {
+    options.compilerArgs += [
+            "-AoutSrgFile=${project.mixinSrg.canonicalPath}",
+            "-AoutRefMapFile=${project.mixinRefMap.canonicalPath}",
+            "-AreobfSrgFile=${project.file('build/mcp-srg.srg').canonicalPath}"
+    ]
+}
+
+tasks.reobfJar.dependsOn(shadowJar)
 sourceCompatibility = 1.8
 targetCompatibility = 1.8

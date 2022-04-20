@@ -4,6 +4,7 @@
   "package": "me.mixins",
   "refmap": "mixins.scmath.refmap.json",
   "mixins": [
-    "MixinGuiMainMenu"
+    "MixinBlock",
+    "MixinBlockModelRenderer"
   ]
 }
