@@ -2,12 +2,17 @@ package me;
 
 import me.config.Config;
 import me.gui.GUI;
+import me.gui.GuiDraggableComponent;
+import me.gui.GuiLineComponent;
 import me.utils.Utils;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiDisconnected;
+import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
@@ -38,6 +43,7 @@ import org.lwjgl.input.Keyboard;
 import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -95,6 +101,7 @@ public class CaneHarvester {
 
 
     static KeyBinding[] customKeyBinds = new KeyBinding[2];
+    List<GuiLineComponent> profitGuiDisplay;
 
     static volatile int totalSc = 0;
     static volatile int totalEsc = 0;
@@ -151,6 +158,12 @@ public class CaneHarvester {
         }catch(Exception e){
             Config.writeConfig();
         }
+
+        GUI.draggableProfitGUI.addLine(null);
+        GUI.draggableProfitGUI.addLine(null);
+        GUI.draggableProfitGUI.addLine(null);
+        GUI.draggableProfitGUI.addLine(null);
+        GUI.draggableProfitGUI.addLine(null);
         ExecuteRunnable(checkPosChange);
 
     }
@@ -201,14 +214,20 @@ public class CaneHarvester {
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
 
 
-            GUI.drawRect(0,  2, 200, 77, new Color(0, 0, 0, 100).getRGB());
+          /*  GUI.drawRect(0,  2, 200, 77, new Color(0, 0, 0, 100).getRGB());
             Utils.drawStringWithShadow(
                     EnumChatFormatting.DARK_GREEN + "« " + EnumChatFormatting.DARK_GREEN + "" + EnumChatFormatting.BOLD + "Cane Harvester" + EnumChatFormatting.DARK_GREEN + " »", 5, 5, 1.2f, -1);
             Utils.drawInfo("Profit/hr", "$" + Utils.formatNumber(moneypersec * 60 * 60), 20);
             Utils.drawInfo("Profit/24hrs", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24), 35);
             Utils.drawInfo("Inventory price", "$" + Utils.formatNumber(totalMoney), 50);
-            Utils.drawInfo("Hoe counter", Utils.formatNumber(getHoeCounter()), 65);
+            Utils.drawInfo("Hoe counter", Utils.formatNumber(getHoeCounter()), 65);*/
 
+            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 3, EnumChatFormatting.DARK_GREEN + "« " + EnumChatFormatting.DARK_GREEN + "" + EnumChatFormatting.BOLD + "Cane Harvester" + EnumChatFormatting.DARK_GREEN + " »", -1, 1.2f), 0);
+            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 18, Utils.formatInfo("Profit/hr", "$" + Utils.formatNumber(moneypersec * 60 * 60)), -1, 1), 1);
+            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 33, Utils.formatInfo("Profit/24hrs", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24)), -1, 1), 2);
+            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 48, Utils.formatInfo("Inventory price", "$" + Utils.formatNumber(totalMoney)), -1, 1), 3);
+            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 63, Utils.formatInfo("Hoe counter", "$" + Utils.formatNumber(getHoeCounter())), -1, 1), 4);
+            GUI.draggableProfitGUI.draw();
 
         }
 
@@ -235,6 +254,7 @@ public class CaneHarvester {
             if (customKeyBinds[0].isPressed()) {
                mc.displayGuiScreen(new GUI());
             }
+
         }
     }
 
@@ -294,6 +314,13 @@ public class CaneHarvester {
         if (enabled && mc.thePlayer != null && mc.theWorld != null) {
 
 
+            if (mc.currentScreen instanceof GuiInventory || mc.currentScreen instanceof GuiChat || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GUI) {
+                Utils.addCustomLog("In inventory/chat/pause, pausing");
+                updateKeybinds(false, false, false, false);
+                deltaX = 1000;
+                deltaZ = 1000;
+                return;
+            }
             if (getLocation() == location.ISLAND) {
                 if(!rotating){
                     try {

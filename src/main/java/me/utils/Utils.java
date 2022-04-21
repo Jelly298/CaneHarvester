@@ -364,9 +364,9 @@ public class Utils {
             }
         }).start();
     }
-    public static void drawInfo(String title, String value, int y) {
-        Utils.drawStringWithShadow(
-                EnumChatFormatting.GRAY + "" + EnumChatFormatting.BOLD + title + EnumChatFormatting.DARK_GRAY +  " » " + EnumChatFormatting.GREEN + value, 5, y, 1.1f, -1);
+    public static String formatInfo(String title, String value) {
+        return  EnumChatFormatting.GRAY + "" + EnumChatFormatting.BOLD + title + EnumChatFormatting.DARK_GRAY +  " » " + EnumChatFormatting.GREEN + value;
+
     }
 
 

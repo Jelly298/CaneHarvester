@@ -8,6 +8,10 @@ import net.minecraft.client.gui.GuiTextField;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
 public class GUI extends GuiScreen {
 
 
@@ -22,6 +26,8 @@ public class GUI extends GuiScreen {
 
     private GuiTextField urlTextBox;
     private GuiTextField jacobThresholdBox;
+
+    public static GuiDraggableComponent draggableProfitGUI = new GuiDraggableComponent(0, 2, 200, 77, new Color(0, 0, 0, 100).getRGB(), new ArrayList<>());
 
 
     @Mod.EventHandler
@@ -53,10 +59,11 @@ public class GUI extends GuiScreen {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         super.drawScreen(mouseX, mouseY, partialTicks);
 
-        drawRect(0, 0, this.width, this.height, 0x30000000);
-        this.drawDefaultBackground();
+        //drawRect(0, 0, this.width, this.height, 0x30000000);
+        //this.drawDefaultBackground();
         mc.fontRendererObj.drawStringWithShadow("Webhook URL", this.width/2 - 180, this.height / 2 + 60 - 3, -1);
         mc.fontRendererObj.drawStringWithShadow("Jacob's Event limit", this.width/2 - 180, this.height / 2 + 100 - 3, -1);
+        draggableProfitGUI.draw(mouseX, mouseY, partialTicks);
 
         urlTextBox.drawTextBox();
         jacobThresholdBox.drawTextBox();
