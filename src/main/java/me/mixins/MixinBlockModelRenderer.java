@@ -17,7 +17,7 @@ public class MixinBlockModelRenderer {
     @Inject(method = {"renderModel(Lnet/minecraft/world/IBlockAccess;Lnet/minecraft/client/resources/model/IBakedModel;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/util/BlockPos;Lnet/minecraft/client/renderer/WorldRenderer;Z)Z"}, at = {@At("HEAD")}, cancellable = true)
     public void renderModel(IBlockAccess blockAccessIn, IBakedModel modelIn, IBlockState blockStateIn, BlockPos blockPosIn, WorldRenderer worldRendererIn, boolean checkSides, CallbackInfoReturnable<Boolean> cir) {
         //cir.cancel();
-        cir.cancel();
+        //cir.cancel();
         //System.out.println("hi");
 
     }

@@ -10,7 +10,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
 import net.minecraft.inventory.Slot;
+import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.ScorePlayerTeam;
@@ -30,39 +32,37 @@ import java.util.stream.Collectors;
 public class Utils {
 
     public static void drawString(String text, int x, int y, float size, int color) {
-        GlStateManager.scale(size,size,size);
-        float mSize = (float)Math.pow(size,-1);
-        Minecraft.getMinecraft().fontRendererObj.drawString(text,Math.round(x / size),Math.round(y / size),color);
-        GlStateManager.scale(mSize,mSize,mSize);
+        GlStateManager.scale(size, size, size);
+        float mSize = (float) Math.pow(size, -1);
+        Minecraft.getMinecraft().fontRendererObj.drawString(text, Math.round(x / size), Math.round(y / size), color);
+        GlStateManager.scale(mSize, mSize, mSize);
     }
+
     public static void drawStringWithShadow(String text, int x, int y, float size, int color) {
-        GlStateManager.scale(size,size,size);
-        float mSize = (float)Math.pow(size,-1);
-        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(text,Math.round(x / size),Math.round(y / size),color);
-        GlStateManager.scale(mSize,mSize,mSize);
+        GlStateManager.scale(size, size, size);
+        float mSize = (float) Math.pow(size, -1);
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(text, Math.round(x / size), Math.round(y / size), color);
+        GlStateManager.scale(mSize, mSize, mSize);
     }
+
     public static void hardRotate(float yaw) {
         Minecraft mc = Minecraft.getMinecraft();
-        if(Math.abs(mc.thePlayer.rotationYaw - yaw) < 0.2f) {
+        if (Math.abs(mc.thePlayer.rotationYaw - yaw) < 0.2f) {
             mc.thePlayer.rotationYaw = yaw;
             return;
         }
-        while(mc.thePlayer.rotationYaw > yaw) {
+        while (mc.thePlayer.rotationYaw > yaw) {
             mc.thePlayer.rotationYaw -= 0.1f;
         }
-        while(mc.thePlayer.rotationYaw < yaw) {
+        while (mc.thePlayer.rotationYaw < yaw) {
             mc.thePlayer.rotationYaw += 0.1f;
 
         }
     }
 
 
-
-
-    public static void drawHorizontalLine(int startX, int endX, int y, int color)
-    {
-        if (endX < startX)
-        {
+    public static void drawHorizontalLine(int startX, int endX, int y, int color) {
+        if (endX < startX) {
             int i = startX;
             startX = endX;
             endX = i;
@@ -71,10 +71,8 @@ public class Utils {
         Gui.drawRect(startX, y, endX + 1, y + 1, color);
     }
 
-    public static void drawVerticalLine(int x, int startY, int endY, int color)
-    {
-        if (endY < startY)
-        {
+    public static void drawVerticalLine(int x, int startY, int endY, int color) {
+        if (endY < startY) {
             int i = startY;
             startY = endY;
             endY = i;
@@ -82,34 +80,39 @@ public class Utils {
 
         Gui.drawRect(x, startY + 1, x + 1, endY, color);
     }
-    public static float get360RotationYaw(){
-        return Minecraft.getMinecraft().thePlayer.rotationYaw > 0?
+
+    public static float get360RotationYaw() {
+        return Minecraft.getMinecraft().thePlayer.rotationYaw > 0 ?
                 (Minecraft.getMinecraft().thePlayer.rotationYaw % 360) :
-                (Minecraft.getMinecraft().thePlayer.rotationYaw < 360f ? 360 - (-Minecraft.getMinecraft().thePlayer.rotationYaw % 360)  :  360 + Minecraft.getMinecraft().thePlayer.rotationYaw);
+                (Minecraft.getMinecraft().thePlayer.rotationYaw < 360f ? 360 - (-Minecraft.getMinecraft().thePlayer.rotationYaw % 360) : 360 + Minecraft.getMinecraft().thePlayer.rotationYaw);
     }
+
     public static float get360RotationYaw(float yaw) {
         return yaw > 0 ?
                 (yaw % 360) :
-                (yaw < 360f ? 360 - (-yaw % 360)  :  360 + yaw);
+                (yaw < 360f ? 360 - (-yaw % 360) : 360 + yaw);
     }
-    static int getOppositeAngle(int angle){
+
+    static int getOppositeAngle(int angle) {
         return (angle < 180) ? angle + 180 : angle - 180;
     }
-    static boolean shouldRotateClockwise(int targetYaw360, int initialYaw360){
+
+    static boolean shouldRotateClockwise(int targetYaw360, int initialYaw360) {
         return targetYaw360 - initialYaw360 > 0 ?
                 targetYaw360 - initialYaw360 <= 180 : targetYaw360 - initialYaw360 < -180;
     }
-    public static void smoothRotateTo(final int rotation360){
+
+    public static void smoothRotateTo(final int rotation360) {
         new Thread(new Runnable() {
             @Override
             public void run() {
 
                 while (get360RotationYaw() != rotation360) {
-                    if(Math.abs(get360RotationYaw() - rotation360) < 1f) {
+                    if (Math.abs(get360RotationYaw() - rotation360) < 1f) {
                         Minecraft.getMinecraft().thePlayer.rotationYaw = Math.round(Minecraft.getMinecraft().thePlayer.rotationYaw + Math.abs(get360RotationYaw() - rotation360));
                         return;
                     }
-                    Minecraft.getMinecraft().thePlayer.rotationYaw += 0.3f + nextInt(3)/10.0f;
+                    Minecraft.getMinecraft().thePlayer.rotationYaw += 0.3f + nextInt(3) / 10.0f;
                     try {
                         Thread.sleep(1);
                     } catch (Exception e) {
@@ -120,18 +123,19 @@ public class Utils {
         }).start();
 
     }
-    public static void smoothRotateClockwise(final int rotationClockwise360){
+
+    public static void smoothRotateClockwise(final int rotationClockwise360) {
         new Thread(new Runnable() {
             @Override
             public void run() {
 
                 int targetYaw = (Math.round(get360RotationYaw()) + rotationClockwise360) % 360;
                 while (get360RotationYaw() != targetYaw) {
-                    if(Math.abs(get360RotationYaw() - targetYaw) < 1f) {
+                    if (Math.abs(get360RotationYaw() - targetYaw) < 1f) {
                         Minecraft.getMinecraft().thePlayer.rotationYaw = Math.round(Minecraft.getMinecraft().thePlayer.rotationYaw + Math.abs(get360RotationYaw() - targetYaw));
                         return;
                     }
-                    Minecraft.getMinecraft().thePlayer.rotationYaw += 0.3f + nextInt(3)/10.0f;
+                    Minecraft.getMinecraft().thePlayer.rotationYaw += 0.3f + nextInt(3) / 10.0f;
                     try {
                         Thread.sleep(1);
                     } catch (Exception e) {
@@ -143,6 +147,21 @@ public class Utils {
         }).start();
 
     }
+
+    public static int getFirstSlotStone() {
+        for (Slot slot : Minecraft.getMinecraft().thePlayer.inventoryContainer.inventorySlots) {
+            if (slot != null) {
+                if (slot.getStack() != null) {
+                    if (slot.getStack().getDisplayName().contains("Stone"))
+                        return slot.slotNumber;
+
+                }
+            }
+        }
+        return -1;
+    }
+
+
     public static float getActualRotationYaw(){ //f3
         return Minecraft.getMinecraft().thePlayer.rotationYaw > 0?
                 (Minecraft.getMinecraft().thePlayer.rotationYaw % 360 > 180 ? -(180 - (Minecraft.getMinecraft().thePlayer.rotationYaw % 360 - 180)) :  Minecraft.getMinecraft().thePlayer.rotationYaw % 360  ) :
@@ -269,6 +288,24 @@ public class Utils {
 
         return lines;
     }
+    public static void smoothRotateClockwise(final int rotationClockwise360, double speed) {
+        new Thread(() -> {
+            int targetYaw = (Math.round(get360RotationYaw()) + rotationClockwise360) % 360;
+            while (get360RotationYaw() != targetYaw) {
+                if (Math.abs(get360RotationYaw() - targetYaw) < 1f * speed) {
+                    Minecraft.getMinecraft().thePlayer.rotationYaw = Math.round(Minecraft.getMinecraft().thePlayer.rotationYaw + Math.abs(get360RotationYaw() - targetYaw));
+                    return;
+                }
+                Minecraft.getMinecraft().thePlayer.rotationYaw += (0.3f + nextInt(3) / 10.0f) * speed;
+                try {
+                    Thread.sleep(1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }).start();
+    }
 
     public static void smoothRotateAnticlockwise(final int rotationAnticlockwise360, double speed){
         new Thread(() -> {
@@ -367,6 +404,16 @@ public class Utils {
     public static String formatInfo(String title, String value) {
         return  EnumChatFormatting.GRAY + "" + EnumChatFormatting.BOLD + title + EnumChatFormatting.DARK_GRAY +  " » " + EnumChatFormatting.GREEN + value;
 
+    }
+    public static int getHoeSlot(){
+        for(int i = 36; i < 44; i++){
+            if(Minecraft.getMinecraft().thePlayer.inventoryContainer.inventorySlots.get(i).getStack() != null){
+                if(Minecraft.getMinecraft().thePlayer.inventoryContainer.inventorySlots.get(i).getStack().getDisplayName().contains("Turing")){
+                    return i - 36;
+                }
+            }
+        }
+        return 0;
     }
 
 

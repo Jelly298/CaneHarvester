@@ -242,11 +242,14 @@ public class CaneHarvester {
 
                 if (!enabled) {
                     if (getLocation() == location.ISLAND) {
-                        Utils.addCustomChat("Starting script");
-                        toggle();
-                    } else {
+                        if(mc.thePlayer.inventoryContainer.inventorySlots.get(42).getStack() == null) {
+                            Utils.addCustomChat("Starting script");
+                            toggle();
+                        } else
+                            Utils.addCustomLog("Clear inventory slot 7");
+                    } else
                         Utils.addCustomChat("Wrong location detected");
-                    }
+
                 } else
                     toggle();
 
@@ -344,7 +347,7 @@ public class CaneHarvester {
 
 
                 mc.gameSettings.pauseOnLostFocus = false;
-                mc.thePlayer.inventory.currentItem = 0;
+                mc.thePlayer.inventory.currentItem = Utils.getHoeSlot();
                 mc.gameSettings.gammaSetting = 100;
 
 
@@ -448,6 +451,13 @@ public class CaneHarvester {
 
                 //chagnge back to left/right
                 if ((Math.abs(initialX - mc.thePlayer.posX) > walkForwardDis || Math.abs(initialZ - mc.thePlayer.posZ) > walkForwardDis) && walkingForward) {
+
+                    if(Utils.getFirstSlotStone() != -1){
+                        activateFailsafe();
+                        ExecuteRunnable(clearStone);
+                        return;
+                    }
+
 
                     mc.thePlayer.sendChatMessage("/setspawn");
                     if (!Utils.isWalkable(Utils.getLeftBlock()) || !Utils.isWalkable(Utils.getBlockAround(-2, 0))) {
@@ -766,6 +776,57 @@ public class CaneHarvester {
             e.printStackTrace();
         }
     };
+    Runnable clearStone = () -> {
+        try {
+            int slotID = Utils.getFirstSlotStone();
+            if(slotID != -1) {
+                Utils.sendWebhook("Found stone. Attempting to remove it");
+                Utils.addCustomLog("Found stone. Attempting to remove it");
+                if (slotID < 9) {
+                    slotID = 36 + slotID;
+                }
+                boolean right = false;
+                Thread.sleep(500);
+                mc.playerController.windowClick(mc.thePlayer.inventoryContainer.windowId, slotID, 0, 0, mc.thePlayer);
+                Thread.sleep(300);
+                mc.playerController.windowClick(mc.thePlayer.inventoryContainer.windowId, slotID, 0, 6, mc.thePlayer);
+                Thread.sleep(300);
+                mc.playerController.windowClick(mc.thePlayer.inventoryContainer.windowId, 35 + 7, 0, 0, mc.thePlayer);
+                Thread.sleep(300);
+                // mc.thePlayer.closeScreen();
+                if (Utils.isWalkable(Utils.getRightBlock())) {
+                    right = true;
+                    Utils.smoothRotateAnticlockwise(90, 2.5);
+                } else{
+                    right = false;
+                    Utils.smoothRotateClockwise(90, 2.5);
+                }
+                Thread.sleep(400);
+                mc.thePlayer.inventory.currentItem = -1 + 7;
+                Thread.sleep(400);
+                mc.thePlayer.dropOneItem(true);
+                Utils.addCustomLog("Dropped successfully");
+                Thread.sleep(100);
+                if (right) {
+                    Utils.smoothRotateClockwise(90, 2.5);
+                    Thread.sleep(1000);
+                } else {
+                    Utils.smoothRotateAnticlockwise(90, 2.5);
+                    Thread.sleep(1000);
+                }
+                Utils.addCustomLog("Re-enabling script");
+                deltaX = 100;
+                deltaZ = 100;
+                inFailsafe = false;
+                stuck = false;
+                enabled = true;
+            } else {
+                Utils.addCustomLog("No stone found");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    };
 
     int bedrockCount() {
         int r = 4;
@@ -997,5 +1058,6 @@ public class CaneHarvester {
 
         return 0;
     }
+
 }
 
