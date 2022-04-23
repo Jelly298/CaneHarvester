@@ -328,7 +328,6 @@ public class CaneHarvester {
             }
         }
 
-        //script code
         if (enabled && mc.thePlayer != null && mc.theWorld != null) {
 
 
@@ -480,6 +479,9 @@ public class CaneHarvester {
 
                     setspawnLag = true;
                     mc.thePlayer.sendChatMessage("/setspawn");
+
+                    initialX = mc.thePlayer.posX;
+                    initialZ = mc.thePlayer.posZ;
 
                     if (!Utils.isWalkable(Utils.getLeftBlock()) || !Utils.isWalkable(Utils.getBlockAround(-2, 0))) {
                         //set last lane dir
@@ -1012,9 +1014,11 @@ public class CaneHarvester {
                             name.contains("Sugar Cane") || name.contains("Enchanted Sugar") || name.contains("Enchanted Sugar Cane") ||
                             name.contains("Stone")
                     ) {
-                        Utils.addCustomLog("Found stack, selling");
-                        clickWindow(mc.thePlayer.openContainer.windowId, (j < 9 ? j + 45 + 36 : j + 45));
-                        Thread.sleep(200);
+                        if(!name.contains("Hoe")) {
+                            Utils.addCustomLog("Found stack, selling");
+                            clickWindow(mc.thePlayer.openContainer.windowId, (j < 9 ? j + 45 + 36 : j + 45));
+                            Thread.sleep(200);
+                        }
                     }
                 }
                 Thread.sleep(20);
