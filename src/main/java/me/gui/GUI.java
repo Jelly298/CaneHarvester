@@ -1,5 +1,6 @@
 package me.gui;
 
+import me.CaneHarvester;
 import me.config.Config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
@@ -11,6 +12,10 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class GUI extends GuiScreen {
 
@@ -50,6 +55,8 @@ public class GUI extends GuiScreen {
         jacobThresholdBox.setFocused(false);
 
         this.buttonList.add(new GuiBetterButton(0, this.width/2 - buttonWidth /2 ,  this.height/2 - buttonHeight /2, buttonWidth, buttonHeight, "Resync : " + (Config.resync ? "on" : "off")));
+        this.buttonList.add(new GuiBetterButton(1, this.width/2 - buttonWidth /2 ,  this.height/2 - buttonHeight /2 - 70, buttonWidth, buttonHeight, "Autosell : " + (Config.autosell ? "on" : "off")));
+        this.buttonList.add(new GuiBetterButton(2, this.width/2 - buttonWidth /2 ,  this.height/2 - buttonHeight /2 - 140, buttonWidth, buttonHeight, "Sell inventory"));
 
 
     }
@@ -83,6 +90,15 @@ public class GUI extends GuiScreen {
         if(button.id == 0){
             Config.resync = !Config.resync;
             buttonList.get(0).displayString = "Resync : " + (Config.resync ? "on" : "off");
+        }
+        if(button.id == 1){
+            Config.autosell = !Config.autosell;
+            buttonList.get(1).displayString = "Autosell : " + (Config.autosell ? "on" : "off");
+        }
+        if(button.id == 2){
+            ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+            executorService.execute(CaneHarvester.autoSell);
+            executorService.shutdown();
         }
 
     }

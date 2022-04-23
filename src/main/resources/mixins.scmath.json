@@ -5,6 +5,7 @@
   "refmap": "mixins.scmath.refmap.json",
   "mixins": [
     "MixinBlock",
-    "MixinBlockModelRenderer"
+    "MixinBlockModelRenderer",
+    "MixinNetHandlerPlayClient"
   ]
 }

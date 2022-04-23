@@ -11,16 +11,20 @@ import java.io.FileWriter;
 
 public class Config {
     public static boolean resync = false;
+    public static boolean autosell = false;
     public static String urlText = "";
     public static String jacobThreshold = "";
+
 
     public static void writeConfig(){
         try {
 
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter("scconfig.txt"));
             bufferedWriter.write("\n" + resync);
+            bufferedWriter.write("\n" + autosell);
             bufferedWriter.write("\n" + urlText);
             bufferedWriter.write("\n" + jacobThreshold);
+
             bufferedWriter.close();
         }catch(Exception e){
             e.printStackTrace();
@@ -32,6 +36,7 @@ public class Config {
             BufferedReader bufferedReader = new BufferedReader(new FileReader("scconfig.txt"));
             bufferedReader.readLine();
             resync = Boolean.parseBoolean(bufferedReader.readLine());
+            autosell = Boolean.parseBoolean(bufferedReader.readLine());
             urlText = bufferedReader.readLine();
             jacobThreshold = bufferedReader.readLine();
             bufferedReader.close();

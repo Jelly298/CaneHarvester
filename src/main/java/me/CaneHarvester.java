@@ -2,7 +2,6 @@ package me;
 
 import me.config.Config;
 import me.gui.GUI;
-import me.gui.GuiDraggableComponent;
 import me.gui.GuiLineComponent;
 import me.utils.Utils;
 import net.minecraft.block.Block;
@@ -12,13 +11,16 @@ import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiDisconnected;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.ContainerChest;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.*;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
@@ -40,13 +42,14 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 
-import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Mod(modid = CaneHarvester.MODID, version = CaneHarvester.VERSION)
 public class CaneHarvester {
@@ -75,6 +78,8 @@ public class CaneHarvester {
     volatile static boolean rotating = false;
     volatile static boolean caged = false;
     volatile static boolean hubCaged;
+    volatile static boolean selling;
+    static boolean setspawnLag;
 
 
     public volatile static double beforeX = 0;
@@ -87,6 +92,11 @@ public class CaneHarvester {
     public volatile static double initialZ = 0;
     public static float walkForwardDis = 5.9f;
     public static location currentLocation;
+
+    public static boolean cookie = true;
+    public static boolean godPot = true;
+    public static IChatComponent header;
+    public static IChatComponent footer;
 
 
     public int keybindA = mc.gameSettings.keyBindLeft.getKeyCode();
@@ -118,6 +128,8 @@ public class CaneHarvester {
     MouseHelper mouseHelper = new MouseHelper();
     static int playerYaw = 0;
     private static Logger logger;
+    private static final Pattern PATTERN_ACTIVE_EFFECTS = Pattern.compile(
+            "\u00a7r\u00a7r\u00a77You have a \u00a7r\u00a7cGod Potion \u00a7r\u00a77active! \u00a7r\u00a7d([0-9]*?:?[0-9]*?:?[0-9]*)\u00a7r");
 
 
 
@@ -202,6 +214,9 @@ public class CaneHarvester {
         }
         if (event.message.getFormattedText().contains("This server is too laggy")) {
             bazaarLag = true;
+        }
+        if (event.message.getFormattedText().contains("spawn location has been set")) {
+            setspawnLag = false;
         }
 
 
@@ -324,7 +339,11 @@ public class CaneHarvester {
                 deltaZ = 1000;
                 return;
             }
-            if (getLocation() == location.ISLAND) {
+            if(selling)
+                return;
+            if(setspawnLag)
+                return;
+            if (getLocation() == location.ISLAND && !selling) {
                 if(!rotating){
                     try {
                         if(Integer.parseInt(Config.jacobThreshold) != 0) {
@@ -452,27 +471,29 @@ public class CaneHarvester {
                 //chagnge back to left/right
                 if ((Math.abs(initialX - mc.thePlayer.posX) > walkForwardDis || Math.abs(initialZ - mc.thePlayer.posZ) > walkForwardDis) && walkingForward) {
 
+                    updateKeybinds(false, false, false, false);
                     if(Utils.getFirstSlotStone() != -1){
                         activateFailsafe();
                         ExecuteRunnable(clearStone);
                         return;
                     }
 
-
+                    setspawnLag = true;
                     mc.thePlayer.sendChatMessage("/setspawn");
+
                     if (!Utils.isWalkable(Utils.getLeftBlock()) || !Utils.isWalkable(Utils.getBlockAround(-2, 0))) {
                         //set last lane dir
                         currentDirection = direction.RIGHT;
                         lastLaneDirection = direction.RIGHT;
-                        updateKeybinds(false, false, false, true);
                     } else if (!Utils.isWalkable(Utils.getRightBlock()) || !Utils.isWalkable(Utils.getBlockAround(2, 0))) {
                         currentDirection = direction.LEFT;
                         lastLaneDirection = direction.LEFT;
-                        updateKeybinds(false, false, true, false);
                     }
 
                     Utils.addCustomLog("Changing motion : Going " + currentDirection);
-                    ScheduleRunnable(PressS, 200, TimeUnit.MILLISECONDS);
+                    ScheduleRunnable(PressS, 500, TimeUnit.MILLISECONDS);
+                    ExecuteRunnable(checkFooter);
+                    ExecuteRunnable(CheckFullInventory);
                     walkingForward = false;
                 }
             } else {
@@ -506,7 +527,7 @@ public class CaneHarvester {
             }
         }
     };
-    Runnable reSync = new Runnable() {
+    Runnable Resync = new Runnable() {
         @Override
         public void run() {
             try {
@@ -518,8 +539,8 @@ public class CaneHarvester {
 
                 Utils.addCustomChat("Resyncing...");
                 Utils.sendWebhook("Detected desync. Resyncing...");
-                Thread.sleep(350);
                 activateFailsafe();
+                Thread.sleep(350);
                 Thread.sleep(650);
                 ScheduleRunnable(WarpHub, 3, TimeUnit.SECONDS);
             } catch (Exception e) {
@@ -599,9 +620,11 @@ public class CaneHarvester {
     };
 
     Runnable checkDensity = () -> {
-        Utils.addCustomLog("Checking density : " + getDensityPercentage(currentDirection));
-        if(getDensityPercentage(currentDirection) > 49){
-            ExecuteRunnable(reSync);
+        if(!selling) {
+            Utils.addCustomLog("Checking density : " + getDensityPercentage(currentDirection));
+            if (getDensityPercentage(currentDirection) > 49) {
+                ExecuteRunnable(Resync);
+            }
         }
     };
 
@@ -670,6 +693,33 @@ public class CaneHarvester {
 
         enabled = true;
     };
+    public Runnable CheckFullInventory = () -> {
+        int count = 0;
+        int total = 0;
+        int elapsed = 0;
+        Minecraft mc = Minecraft.getMinecraft();
+        try {
+            while (elapsed < 6000) {
+                if (mc.thePlayer.inventory.getFirstEmptyStack() == -1) {
+                    count++;
+                }
+                total++;
+                elapsed += 10;
+                Thread.sleep(10);
+            }
+            if (((float) count / total) > 0.60 && !selling && Config.autosell && !inFailsafe && enabled) {
+                selling = true;
+                Utils.sendWebhook("Inventory full, Auto Selling!");
+                ExecuteRunnable(autoSell);
+                unpressKeybinds();
+            } else {
+               // checkFull = false;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    };
+
 
 
     Runnable islandCage = () -> {
@@ -827,6 +877,196 @@ public class CaneHarvester {
             e.printStackTrace();
         }
     };
+    public static Runnable checkFooter = () -> {
+        Utils.addCustomLog("Looking for godpot/cookie");
+        boolean foundGodPot = false;
+        boolean foundCookieText = false;
+        if (footer != null) {
+            String formatted = footer.getFormattedText();
+            for (String line : formatted.split("\n")) {
+                Matcher activeEffectsMatcher = PATTERN_ACTIVE_EFFECTS.matcher(line);
+                if (activeEffectsMatcher.matches()) {
+                    foundGodPot = true;
+                } else if (line.contains("\u00a7d\u00a7lCookie Buff")) {
+                    foundCookieText = true;
+                } else if (foundCookieText && line.contains("Not active! Obtain")) {
+                    Utils.addCustomLog("Cookie buff not active!");
+                    foundCookieText = false;
+                    cookie = false;
+                } else if (foundCookieText) {
+                    Utils.addCustomLog("Cookie active!");
+                    foundCookieText = false;
+                }
+            }
+            if (!foundGodPot) {
+                Utils.addCustomLog("God pot buff not active!");
+                godPot = false;
+            } else {
+                Utils.addCustomLog("God pot buff active!");
+            }
+        }
+    };
+    public static Runnable autoSell = () -> {
+        try {
+
+            Minecraft mc = Minecraft.getMinecraft();
+            selling = true;
+            int hoeSlot = mc.thePlayer.inventory.currentItem;
+
+            Integer[] NPCSellSlots = {11, 16, 21, 23};
+            Integer[] NPCSellSlotCounts = {0, 0, 0, 0};
+
+            Integer[] BZSellSlots = {10, 13, 19};
+            Integer[] BZSellSlotCounts = {0, 0, 0};
+
+            if (!cookie) {
+                Utils.addCustomLog("You need a cookie for auto sell!");
+                KeyBinding.onTick(mc.gameSettings.keyBindAttack.getKeyCode());
+                Thread.sleep(100);
+                return;
+            }
+
+            sellInventory();
+
+            if (findItemInventory("Large Enchanted Agronomy Sack") == -1) {
+                Utils.addCustomLog("No sack detected, resuming");
+                Thread.sleep(100);
+                mc.thePlayer.inventory.currentItem = hoeSlot;
+                Thread.sleep(100);
+                KeyBinding.onTick(mc.gameSettings.keyBindAttack.getKeyCode());
+                Thread.sleep(100);
+                selling = false;
+                return;
+            }
+            Utils.addCustomLog("Preparing to open sack");
+            Thread.sleep(1000);
+            openSack();
+
+            Utils.addCustomLog("Counting");
+            // Count all items in sack NPC
+            for (int i = 0; i < NPCSellSlots.length; i++) {
+                NPCSellSlotCounts[i] = countSack(NPCSellSlots[i]);
+                Utils.addCustomLog("NPCSellSlotCount : " + NPCSellSlotCounts[i]);
+            }
+
+
+            // Count all items in sack BZ
+            for (int i = 0; i < BZSellSlots.length; i++) {
+                BZSellSlotCounts[i] = countSack(BZSellSlots[i]);
+                Utils.addCustomLog("BazaarSellSlotCount : " + BZSellSlotCounts[i]);
+            }
+
+            // Claim items with counts
+            for (int i = 0; i < NPCSellSlots.length; i++) {
+                while (NPCSellSlotCounts[i] != 0) {
+                    if (!(mc.currentScreen instanceof GuiContainer)) {
+                        openSack();
+                    }
+                    while (mc.thePlayer.inventory.getFirstEmptyStack() != -1 && NPCSellSlotCounts[i] != 0) {
+                        Utils.addCustomLog("Collecting");
+                        clickWindow(mc.thePlayer.openContainer.windowId, NPCSellSlots[i]);
+                        waitForItem(NPCSellSlots[i], "");
+                        Thread.sleep(100);
+                        NPCSellSlotCounts[i] = countSack(NPCSellSlots[i]);
+                    }
+                    sellInventory();
+                }
+
+            }
+
+            // If any remaining in sack, sell to bazaar
+            for (int i = 0; i < BZSellSlots.length; i++) {
+                if (BZSellSlotCounts[i] != 0) {
+                    openBazaar();
+                    waitForItemClick(11, "Selling whole inventory", 39, "Sell Sacks Now");
+                    waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
+                }
+            }
+
+
+            mc.thePlayer.closeScreen();
+            mc.thePlayer.inventory.currentItem = hoeSlot;
+            Thread.sleep(100);
+            KeyBinding.onTick(mc.gameSettings.keyBindAttack.getKeyCode());
+            Thread.sleep(100);
+            selling = false;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    };
+
+    public static void sellInventory() {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            Utils.addCustomLog("Selling Inventory");
+            // Sell to NPC
+            openTrades();
+            Thread.sleep(500);
+            for (int j = 0; j < 36; j++) {
+                ItemStack sellStack = mc.thePlayer.inventory.getStackInSlot(j);
+                if (sellStack != null) {
+                    String name = sellStack.getDisplayName();
+                    if (name.contains("Brown Mushroom") || name.contains("Enchanted Brown Mushroom") || name.contains("Brown Mushroom Block") || name.contains("Brown Enchanted Mushroom Block") ||
+                            name.contains("Red Mushroom") || name.contains("Enchanted Red Mushroom") || name.contains("Red Mushroom Block") || name.contains("Red Enchanted Mushroom Block") ||
+                            name.contains("Nether Wart") || name.contains("Enchanted Nether Wart") || name.contains("Mutant Nether Wart") ||
+                            name.contains("Sugar Cane") || name.contains("Enchanted Sugar") || name.contains("Enchanted Sugar Cane") ||
+                            name.contains("Stone")
+                    ) {
+                        Utils.addCustomLog("Found stack, selling");
+                        clickWindow(mc.thePlayer.openContainer.windowId, (j < 9 ? j + 45 + 36 : j + 45));
+                        Thread.sleep(200);
+                    }
+                }
+                Thread.sleep(20);
+            }
+            mc.thePlayer.closeScreen();
+
+            // Sell to Bazaar
+            for (int j = 0; j < 36; j++) {
+                ItemStack sellStack = mc.thePlayer.inventory.getStackInSlot(j);
+                if (sellStack != null) {
+                    String name = sellStack.getDisplayName();
+                    if (name.contains("Carrot") && !name.contains("Hoe")) {
+                        Utils.addCustomLog("Found carrots, selling");
+                        openBazaar();
+                        waitForItemClick(12, "Carrot", 0, "Farming");
+                        waitForItemClick(29, "Sell Inventory Now", 12, "Carrot", "Enchanted");
+                        waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
+                        waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
+                        Utils.addCustomLog("Successfully sold all carrots");
+                    }
+                    if (name.contains("Potato") && !name.contains("Hoe")) {
+                        Utils.addCustomLog("Found potatoes, selling");
+                        openBazaar();
+                        waitForItemClick(13, "Potato", 0, "Farming");
+                        waitForItemClick(29, "Sell Inventory Now", 13, "Potato", "Enchanted");
+                        waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
+                        waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
+                        Utils.addCustomLog("Successfully sold all potatoes");
+                    }
+                    if ((name.contains("Wheat") || name.contains("Hay Bale") || name.contains("Bread")) && !name.contains("Hoe")) {
+                        Utils.addCustomLog("Found wheat, selling");
+                        openBazaar();
+                        waitForItemClick(11, "Wheat & Seeds", 0, "Farming");
+                        waitForItemClick(29, "Sell Inventory Now", 11, "Wheat & Seeds");
+                        waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
+                        waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
+                        Utils.addCustomLog("Successfully sold all wheat");
+                    }
+                }
+                Thread.sleep(20);
+            }
+            mc.thePlayer.closeScreen();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void clickWindow(int windowID, int slotID, int button) {
+        Minecraft mc = Minecraft.getMinecraft();
+        mc.playerController.windowClick(windowID, slotID, button, 0, mc.thePlayer);
+        Utils.addCustomLog("Clicking slot : " + slotID);
+    }
 
     int bedrockCount() {
         int r = 4;
@@ -993,7 +1233,8 @@ public class CaneHarvester {
         return -1;
 
     }
-    void clickWindow(int windowID, int slotID) {
+
+    static void clickWindow(int windowID, int slotID) {
         Minecraft mc = Minecraft.getMinecraft();
         mc.playerController.windowClick(windowID, slotID, 0, 0, mc.thePlayer);
     }
@@ -1018,6 +1259,11 @@ public class CaneHarvester {
         bazaarLag = false;
         caged = false;
         hubCaged = false;
+        selling = false;
+        cookie = true;
+        godPot = true;
+
+        setspawnLag = false;
     }
     int getHoeCounter() {
         try {
@@ -1044,7 +1290,7 @@ public class CaneHarvester {
             String myData = "";
             for (String line : Utils.getSidebarLines()) {
                 String cleanedLine = Utils.cleanSB(line);
-                if (cleanedLine.contains("Sugar Cane")) {
+                if (cleanedLine.contains("Sugar Cane") || cleanedLine.contains("Mushroom")) {
                     myData = cleanedLine;
                 }
             }
@@ -1058,6 +1304,170 @@ public class CaneHarvester {
 
         return 0;
     }
+    public static void openSack() {
+        int sackSlot = findItemInventory("Large Enchanted Agronomy Sack");
+        openSBMenu();
+        Minecraft mc = Minecraft.getMinecraft();
+        try {
+            ItemStack stack = mc.thePlayer.openContainer.getSlot(31).getStack();
+            ItemStack clickStack = mc.thePlayer.openContainer.getSlot(sackSlot + 45).getStack();
+            while (stack == null || !stack.getDisplayName().contains("Close")) {
+                clickStack = mc.thePlayer.openContainer.getSlot(sackSlot + 45).getStack();
+                stack = mc.thePlayer.openContainer.getSlot(31).getStack();
+                if (clickStack != null && clickStack.getDisplayName().contains("Large Enchanted Agronomy Sack")) {
+                    clickWindow(mc.thePlayer.openContainer.windowId, sackSlot + 45, 1);
+                }
+                Thread.sleep(500);
+            }
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            Utils.addCustomLog("Error found");
+            return;
+        }
+    }
+    public static int countSack(int slotID) {
+        Minecraft mc = Minecraft.getMinecraft();
+        ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+        NBTTagList list = stack.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
+        Pattern pattern = Pattern.compile("^([a-zA-Z]+): ([0-9]+)(.*)");
+        for (int j = 0; j < list.tagCount(); j++) {
+            Matcher matcher = pattern.matcher(StringUtils.stripControlCodes(list.getStringTagAt(j)));
+            if (matcher.matches()) {
+                Utils.addCustomLog("Stored: " + matcher.group(2));
+                return Integer.parseInt(matcher.group(2));
+            }
+        }
+        return 0;
+    }
+    public static boolean openTrades() {
+        openSBMenu();
+        waitForItemClick(48, "Go Back", 22, "Trades");
+        return (Minecraft.getMinecraft().thePlayer.openContainer.getSlot(49).getStack().getItem() == Item.getItemFromBlock(Blocks.hopper));
+    }
+    public static void waitForItem(int slotID, String displayName) {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+            while (stack == null || !stack.getDisplayName().contains(displayName)) {
+                stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+                Thread.sleep(100);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public static int findItemInventory(String name) {
+        for (int i = 0; i < 36; i++) {
+            ItemStack stack = Minecraft.getMinecraft().thePlayer.inventory.getStackInSlot(i);
+            if (stack != null) {
+                if (stack.getDisplayName().contains(name)) {
+                    return i + (i < 9 ? 36 : 0);
+                }
+            }
+        }
+        return -1;
+    }
+    public static void openSBMenu() {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            mc.thePlayer.closeScreen();
+            mc.thePlayer.inventory.currentItem = 8;
+            Thread.sleep(500);
+            KeyBinding.onTick(mc.gameSettings.keyBindUseItem.getKeyCode());
+            while (!(mc.currentScreen instanceof GuiContainer)) {
+                KeyBinding.onTick(mc.gameSettings.keyBindUseItem.getKeyCode());
+                Thread.sleep(100);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void waitForItemClick(int slotID, String displayName, int clickSlotID, String clickDisplayName) {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+            ItemStack clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
+            while (stack == null || !stack.getDisplayName().contains(displayName)) {
+                clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
+                stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+                if (clickStack != null && clickStack.getDisplayName().contains(clickDisplayName)) {
+                    clickWindow(mc.thePlayer.openContainer.windowId, clickSlotID);
+                }
+                Thread.sleep(100);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void waitForItemClick(int slotID, String displayName, int clickSlotID, String clickDisplayName, String exclude) {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+            ItemStack clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
+            while (stack == null || (!stack.getDisplayName().contains(displayName))) {
+                clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
+                stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+                if (clickStack != null && (clickStack.getDisplayName().contains(clickDisplayName) && !clickStack.getDisplayName().contains(exclude))) {
+                    clickWindow(mc.thePlayer.openContainer.windowId, clickSlotID);
+                }
+                Thread.sleep(100);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void waitForItemClick(int slotID, String displayName, int clickSlotID, Item item) {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+            ItemStack clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
+            while (stack == null || !stack.getDisplayName().contains(displayName)) {
+                clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
+                stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
+                if (checkItem(clickStack, item)) {
+                    clickWindow(mc.thePlayer.openContainer.windowId, clickSlotID);
+                }
+                Thread.sleep(100);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public static boolean openBazaar() {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            mc.thePlayer.closeScreen();
+            Thread.sleep(100);
+            mc.thePlayer.sendChatMessage("/bz");
+            while (!(mc.currentScreen instanceof GuiContainer)) {
+                Thread.sleep(100);
+            }
+            return true;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public static boolean checkItem(int slotID, Block item) {
+        ItemStack stack = Minecraft.getMinecraft().thePlayer.openContainer.getSlot(slotID).getStack();
+        return stack != null && stack.getItem() == Item.getItemFromBlock(item);
+    }
+
+    public static boolean checkItem(ItemStack stack, Block item) {
+        return stack != null && stack.getItem() == Item.getItemFromBlock(item);
+    }
+
+    public static boolean checkItem(int slotID, Item item) {
+        ItemStack stack = Minecraft.getMinecraft().thePlayer.openContainer.getSlot(slotID).getStack();
+        return stack != null && stack.getItem() == item;
+    }
+
+    public static boolean checkItem(ItemStack stack, Item item) {
+        return stack != null && stack.getItem() == item;
+    }
+
 
 }
 
