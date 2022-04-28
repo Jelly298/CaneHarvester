@@ -21,9 +21,9 @@ public class GUI extends GuiScreen {
            new GuiTitleComponent(25, "Miscellaneous", -1, new Color(0, 0, 0).getRGB()));
     public static GuiMenuComponent coreTab = new GuiMenuComponent(10, 10, 160, new Color(40, 40, 40).getRGB(), new CoreConfig(),
             new GuiTitleComponent(25, "Core", -1, new Color(0, 0, 0).getRGB()));
-    public static GuiMenuComponent webhookTab = new GuiMenuComponent(200, 200, 160, new Color(40, 40, 40).getRGB(), new WebhookConfig(),
+    public static GuiMenuComponent webhookTab = new GuiMenuComponent(200, 140, 160, new Color(40, 40, 40).getRGB(), new WebhookConfig(),
             new GuiTitleComponent(25, "Webhook", -1, new Color(0, 0, 0).getRGB()));
-    public static GuiMenuComponent jacobTab = new GuiMenuComponent(10, 180, 160, new Color(40, 40, 40).getRGB(), new JacobConfig(),
+    public static GuiMenuComponent jacobTab = new GuiMenuComponent(10, 140, 160, new Color(40, 40, 40).getRGB(), new JacobConfig(),
             new GuiTitleComponent(25, "Jacob", -1, new Color(0, 0, 0).getRGB()));
 
 
