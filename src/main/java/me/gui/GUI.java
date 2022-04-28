@@ -1,5 +1,6 @@
 package me.gui;
 
+import me.config.configTypes.CoreConfig;
 import me.config.configTypes.JacobConfig;
 import me.config.configTypes.MiscellaneousConfig;
 import me.config.configTypes.WebhookConfig;
@@ -16,11 +17,13 @@ import java.awt.*;
 public class GUI extends GuiScreen {
 
    // public static GuiMenuComponent DraggableProfitGUI = new GuiMenuComponent(0, 2, 140, 77, new Color(0, 0, 0, 100).getRGB(), new JacobConfig(), null);
-    public static GuiMenuComponent miscellaneousTab = new GuiMenuComponent(5, 5, 160, new Color(40, 40, 40).getRGB(), new MiscellaneousConfig(),
+    public static GuiMenuComponent miscellaneousTab = new GuiMenuComponent(200, 10, 160, new Color(40, 40, 40).getRGB(), new MiscellaneousConfig(),
            new GuiTitleComponent(25, "Miscellaneous", -1, new Color(0, 0, 0).getRGB()));
-    public static GuiMenuComponent webhookTab = new GuiMenuComponent(200, 5, 160, new Color(40, 40, 40).getRGB(), new WebhookConfig(),
+    public static GuiMenuComponent coreTab = new GuiMenuComponent(10, 10, 160, new Color(40, 40, 40).getRGB(), new CoreConfig(),
+            new GuiTitleComponent(25, "Core", -1, new Color(0, 0, 0).getRGB()));
+    public static GuiMenuComponent webhookTab = new GuiMenuComponent(200, 200, 160, new Color(40, 40, 40).getRGB(), new WebhookConfig(),
             new GuiTitleComponent(25, "Webhook", -1, new Color(0, 0, 0).getRGB()));
-    public static GuiMenuComponent jacobTab = new GuiMenuComponent(5, 180, 160, new Color(40, 40, 40).getRGB(), new JacobConfig(),
+    public static GuiMenuComponent jacobTab = new GuiMenuComponent(10, 180, 160, new Color(40, 40, 40).getRGB(), new JacobConfig(),
             new GuiTitleComponent(25, "Jacob", -1, new Color(0, 0, 0).getRGB()));
 
 
@@ -51,6 +54,7 @@ public class GUI extends GuiScreen {
         super.drawScreen(mouseX, mouseY, partialTicks);
 
         miscellaneousTab.draw(mouseX, mouseY, partialTicks);
+        coreTab.draw(mouseX, mouseY, partialTicks);
         webhookTab.draw(mouseX, mouseY, partialTicks);
         jacobTab.draw(mouseX, mouseY, partialTicks);
 

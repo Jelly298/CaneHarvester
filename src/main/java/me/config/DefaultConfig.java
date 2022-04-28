@@ -1,6 +1,7 @@
 package me.config;
 
 import org.json.simple.JSONObject;
+import org.lwjgl.input.Keyboard;
 
 public class DefaultConfig {
     public static JSONObject getDefaultConfig() {
@@ -13,6 +14,10 @@ public class DefaultConfig {
         config.put("webhook", false);
         config.put("webhookurl", "paste here");
         config.put("webhookstatus", false);
+        config.put("xray", false);
+        config.put("openguikey", Keyboard.KEY_RSHIFT);
+        config.put("togglekey", Keyboard.KEY_GRAVE);
+
         return config;
     }
 }

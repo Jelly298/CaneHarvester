@@ -10,9 +10,9 @@ import java.util.stream.Stream;
 public class MiscellaneousConfig implements IConfigType{
 
     public static List<ConfigPair<Object>> configList = Stream.of(
-            new ConfigPair<>("resync", "Resync", (Object) false),
-            new ConfigPair<>("autosell", "Autosell", (Object) false),
-            new ConfigPair<>("dropstone", "Drop stone", (Object) false)
+            new ConfigPair<>("xray", "XRay", (Object) false),
+            new ConfigPair<>("autosell", "Autosell", (Object) false)
+
     ).collect(Collectors.toList());
 
     @Override

@@ -71,8 +71,13 @@ public class BlockUtils {
         int Y = (int)mc.thePlayer.posY;
         int Z = (int)mc.thePlayer.posZ;
 
-        return new BlockPos(getUnitZ() * -1 * rightOffset + getUnitX()* frontOffset + X, Y + upOffset,
-                        getUnitX() * rightOffset + getUnitZ() * frontOffset + Z);
+        return new BlockPos(getUnitZ() * -1 * rightOffset + getUnitX()* frontOffset + X + (willOverlap00(X, getUnitX()* frontOffset) ? (X + getUnitX() * frontOffset < 0 ? 1 : -1): 0), Y + upOffset,
+                        getUnitX() * rightOffset + getUnitZ() * frontOffset + Z + (willOverlap00(Z, getUnitZ()* frontOffset) ? (Z + getUnitZ()* frontOffset < 0 ? 1 : -1) : 0));
+
+    }
+    public static boolean willOverlap00(int posX, int relativeFrontOffset){
+        return (posX > 0 && posX + relativeFrontOffset <= 0) || (posX < 0 && posX + relativeFrontOffset >= 0);
+
 
     }
     public static Block getFrontBlock(){

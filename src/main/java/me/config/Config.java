@@ -23,6 +23,7 @@ public class Config {
         registerConfigType(new JacobConfig());
         registerConfigType(new MiscellaneousConfig());
         registerConfigType(new WebhookConfig());
+        registerConfigType(new CoreConfig());
 
         // Create config file if it doesn't exist
         if (!configFile.isFile()) {

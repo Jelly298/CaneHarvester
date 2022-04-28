@@ -21,6 +21,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.*;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
+import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.FMLClientHandler;
@@ -152,25 +153,24 @@ public class CaneHarvester {
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-
+        MinecraftForge.EVENT_BUS.register(new CaneHarvester());
     }
 
 
     @EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-
-        MinecraftForge.EVENT_BUS.register(new CaneHarvester());
+        customKeyBinds[0] = new KeyBinding("Open GUI", Config.<Long>get("openguikey").intValue(), "CaneHarvester");
+        customKeyBinds[1] = new KeyBinding("Toggle script", Config.<Long>get("togglekey").intValue(), "CaneHarvester");
+        ClientRegistry.registerKeyBinding(customKeyBinds[0]);
+        ClientRegistry.registerKeyBinding(customKeyBinds[1]);
     }
 
 
     @EventHandler
     public void init(FMLInitializationEvent event) {
         Config.init();
-        customKeyBinds[0] = new KeyBinding("Open GUI", Keyboard.KEY_RSHIFT, "CaneHarvester");
-        customKeyBinds[1] = new KeyBinding("Toggle script", Keyboard.KEY_GRAVE, "CaneHarvester");
         GUI.init();
-        ClientRegistry.registerKeyBinding(customKeyBinds[0]);
-        ClientRegistry.registerKeyBinding(customKeyBinds[1]);
+
         ExecuteRunnable(checkPosChange);
 
     }
@@ -233,6 +233,16 @@ public class CaneHarvester {
 
         }
 
+    }
+    @SubscribeEvent
+    public void changeKeybind(GuiScreenEvent.KeyboardInputEvent.Post event)
+    {
+        if(event.gui instanceof GuiControls)
+        {
+            Config.set("openguikey", CaneHarvester.customKeyBinds[0].getKeyCode());
+            Config.set("togglekey", CaneHarvester.customKeyBinds[1].getKeyCode());
+
+        }
     }
 
     @SubscribeEvent
@@ -1095,8 +1105,9 @@ public class CaneHarvester {
                     Utils.addCustomLog("Detected one block off");
                     return BlockUtils.getBlockPosAround(0, 5, 0);
                 }
-                else
+                else {
                     return BlockUtils.getBlockPosAround(0, 6, 0);
+                }
 
             }
         }
@@ -1138,7 +1149,8 @@ public class CaneHarvester {
                 (!BlockUtils.isWalkable(BlockUtils.getBackBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock())) ||
                 (!BlockUtils.isWalkable(BlockUtils.getBackBlock()) && !BlockUtils.isWalkable(BlockUtils.getRightBlock())) ||
                 (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) && !BlockUtils.isWalkable(BlockUtils.getRightBlock())) ||
-                (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock()));
+                (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock())) ||
+                (!BlockUtils.isWalkable(BlockUtils.getRightBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock()));
     }
 
 
