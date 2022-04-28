@@ -9,6 +9,7 @@ import scala.util.parsing.json.JSON;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Config {
@@ -34,20 +35,6 @@ public class Config {
 
             Object obj = jsonParser.parse(reader);
             config = (JSONObject) obj;
-
-            List<Object> tempKeys = new ArrayList<>();
-            for(IConfigType configType : configTypeList){
-                for(int i = 0; i < configType.getConfigPairList().size(); i++){
-                    tempKeys.add(configType.getConfigPairList().get(i).getConfigID());
-                }
-            }
-
-            if(DefaultConfig.getDefaultConfig().keySet().toArray() != tempKeys.toArray()) {
-                writeConfig(DefaultConfig.getDefaultConfig());
-                config = DefaultConfig.getDefaultConfig();
-            }
-
-
 
         } catch (Exception e) {
             writeConfig(DefaultConfig.getDefaultConfig());

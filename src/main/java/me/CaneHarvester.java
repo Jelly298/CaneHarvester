@@ -476,7 +476,8 @@ public class CaneHarvester {
                     }
 
                     Utils.addCustomLog("Changing motion : Going " + currentDirection);
-                    ScheduleRunnable(PressS, 500, TimeUnit.MILLISECONDS);
+                    if(Config.<Boolean>get("resync"))
+                        ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
                     ExecuteRunnable(checkFooter);
                     ExecuteRunnable(CheckFullInventory);
                     walkingForward = false;
@@ -577,47 +578,9 @@ public class CaneHarvester {
         }
     };
 
-
-    Runnable PressS = new Runnable() {
-        @Override
-        public void run() {
-
-            if (stuck || inFailsafe || walkingForward)
-                return;
-
-            try {
-               /* do {
-                    Utils.addCustomLog("Pressing S");
-                    updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
-                    Thread.sleep(50);
-                }
-                while (BlockUtils.isWalkable(BlockUtils.getBackBlock()) && (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) || !BlockUtils.isWalkable(BlockUtils.getBlockAround(0, 2))));
-
-                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());*/
-                if(Config.<Boolean>get("resync"))
-                    ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
-
-                /*if(Config.<Boolean>get("resync"))
-                    ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
-                if(playerYaw == 180 || playerYaw == 0){
-                    if(Math.abs(mc.thePlayer.posZ) % 1 > 0.3f || Math.abs(mc.thePlayer.posZ) % 1 < 0.7f) return;
-                    do {
-                        Utils.addCustomLog("Pressing S");
-                        updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
-                        Thread.sleep(1);
-                    }
-                    while (Math.abs(mc.thePlayer.posZ) % 1 < 0.3f || Math.abs(mc.thePlayer.posZ) % 1 > 0.7f);
-                }
-                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());*/
-            } catch (Exception e) {
-                e.printStackTrace();
-
-            }
-
-        }
-    };
-
     Runnable checkDensity = () -> {
+        if (stuck || inFailsafe || walkingForward)
+            return;
         if(!selling) {
             Utils.addCustomLog("Checking density : " + getDensityPercentage(currentDirection));
             if (getDensityPercentage(currentDirection) > 49) {
@@ -1128,7 +1091,13 @@ public class CaneHarvester {
             if(!BlockUtils.isWalkable(BlockUtils.getRightBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock())){
                 return BlockUtils.getBlockPosAround(0, 1, 0);
             } else {
-                return BlockUtils.getBlockPosAround(0, 6, 0);
+                if(!BlockUtils.isWalkable(BlockUtils.getBlockAround(-1, 1, 0)) && !BlockUtils.isWalkable(BlockUtils.getBlockAround(1, 1, 0))) {
+                    Utils.addCustomLog("Detected one block off");
+                    return BlockUtils.getBlockPosAround(0, 5, 0);
+                }
+                else
+                    return BlockUtils.getBlockPosAround(0, 6, 0);
+
             }
         }
 

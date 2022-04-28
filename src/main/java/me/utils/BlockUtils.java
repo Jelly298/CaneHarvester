@@ -55,13 +55,14 @@ public class BlockUtils {
     }
     public static Block getBlockAround(int rightOffset, int frontOffset, int upOffset){
         Minecraft mc = Minecraft.getMinecraft();
-        double X = mc.thePlayer.posX;
-        double Y = mc.thePlayer.posY;
-        double Z = mc.thePlayer.posZ;
+        int X = (int)mc.thePlayer.posX;
+        int Y = (int)mc.thePlayer.posY;
+        int Z = (int)mc.thePlayer.posZ;
+
 
         return (mc.theWorld.getBlockState(
-                new BlockPos(mc.thePlayer.getLookVec().zCoord * -1 * rightOffset + mc.thePlayer.getLookVec().xCoord * frontOffset + X, Y + upOffset,
-                        mc.thePlayer.getLookVec().xCoord * rightOffset + mc.thePlayer.getLookVec().zCoord * frontOffset + Z)).getBlock());
+                new BlockPos(getUnitZ() * -1 * rightOffset + getUnitX() * frontOffset + X + (X > 0? 0.1f : -0.1f), Y + upOffset,//
+                        getUnitX() * rightOffset + getUnitZ() * frontOffset + Z + (Z > 0? 0.1f : -0.1f))).getBlock()); //
 
     }
     public static BlockPos getBlockPosAround(int rightOffset, int frontOffset, int upOffset){
