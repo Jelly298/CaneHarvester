@@ -11,6 +11,32 @@ import net.minecraft.util.Vec3i;
 import java.util.ArrayList;
 
 public class BlockUtils {
+    static  Minecraft mc = Minecraft.getMinecraft();
+    public static int getUnitX() {
+        double modYaw = (mc.thePlayer.rotationYaw % 360 + 360) % 360;
+        if (modYaw < 45 || modYaw > 315) {
+            return 0;
+        } else if (modYaw < 135) {
+            return -1;
+        } else if (modYaw < 225) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
+    public static int getUnitZ() {
+        double modYaw = (mc.thePlayer.rotationYaw % 360 + 360) % 360;
+        if (modYaw < 45 || modYaw > 315) {
+            return 1;
+        } else if (modYaw < 135) {
+            return 0;
+        } else if (modYaw < 225) {
+            return -1;
+        } else {
+            return 0;
+        }
+    }
     public static boolean isWalkable(Block block) {
         return block == Blocks.air || block == Blocks.water || block == Blocks.flowing_water || block == Blocks.reeds;
     }
@@ -36,6 +62,16 @@ public class BlockUtils {
         return (mc.theWorld.getBlockState(
                 new BlockPos(mc.thePlayer.getLookVec().zCoord * -1 * rightOffset + mc.thePlayer.getLookVec().xCoord * frontOffset + X, Y + upOffset,
                         mc.thePlayer.getLookVec().xCoord * rightOffset + mc.thePlayer.getLookVec().zCoord * frontOffset + Z)).getBlock());
+
+    }
+    public static BlockPos getBlockPosAround(int rightOffset, int frontOffset, int upOffset){
+        Minecraft mc = Minecraft.getMinecraft();
+        int X = (int)mc.thePlayer.posX;
+        int Y = (int)mc.thePlayer.posY;
+        int Z = (int)mc.thePlayer.posZ;
+
+        return new BlockPos(getUnitZ() * -1 * rightOffset + getUnitX()* frontOffset + X, Y + upOffset,
+                        getUnitX() * rightOffset + getUnitZ() * frontOffset + Z);
 
     }
     public static Block getFrontBlock(){

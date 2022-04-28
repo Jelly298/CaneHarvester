@@ -7,9 +7,13 @@ import java.util.Map;
 public class MixinLoader implements IFMLLoadingPlugin {
 
     public MixinLoader() {
-        System.out.println("mixins initialized");
-        MixinBootstrap.init();
-        Mixins.addConfiguration("mixins.scmath.json");
+        try {
+            System.out.println("mixins initialized");
+            MixinBootstrap.init();
+            Mixins.addConfiguration("mixins.scmath.json");
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Override

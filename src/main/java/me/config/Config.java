@@ -78,11 +78,11 @@ public class Config {
         }
     }
 
-    public static Object get(String property) {
+    static public<T> T get(String property) {
         if (config.get(property) == null) {
             set(property, DefaultConfig.getDefaultConfig().get(property));
         }
-        return config.get(property);
+        return (T)config.get(property);
     }
 
     public static void set(String property, Object value) {

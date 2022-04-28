@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class Utils {
+    static Minecraft mc = Minecraft.getMinecraft();
 
     public static void drawString(String text, float x, float y, float size, int color) {
         GlStateManager.scale(size, size, size);
@@ -92,8 +93,9 @@ public class Utils {
     }
     public static void sendWebhook(String message) {
 
-        if(Boolean.TRUE.equals(getValueFromConfig(new WebhookConfig(), "webhook"))) {
-            DiscordWebhook webhook = new DiscordWebhook(Utils.getValueFromConfig(new WebhookConfig(), "webhookurl"));
+        if(Config.<Boolean>get("webhook")) {
+            System.out.println("sending");
+            DiscordWebhook webhook = new DiscordWebhook(Config.get("webhookurl"));
 
             webhook.addEmbed(new DiscordWebhook.EmbedObject()
                     .setDescription("**Cane Harvester Log** ```" + message + "```")
@@ -134,16 +136,6 @@ public class Utils {
         }
         return 0;
     }
-    static public<T> T getValueFromConfig(IConfigType config, String id){
-        try {
-            for (ConfigPair<Object> configPair : config.getConfigPairList()) {
-                if (configPair.getConfigID().equals(id)) return (T) configPair.getConfigValue();
-            }
-        } catch (Exception e){
-            Config.writeConfig(DefaultConfig.getDefaultConfig());
-        }
-        return null;
-    }
     public static boolean arrayHasPosAndNeg(ArrayList<Integer> ar) {
         boolean hasPos = false;
         boolean hasNeg = false;
@@ -158,6 +150,11 @@ public class Utils {
     }
     public static float getVerticalOffset(int height, float bufferScale){
         return height/2.0f - (height * bufferScale)/2.0f;
+    }
+    public static boolean isInCenterOfBlock(){
+        return (AngleUtils.get360RotationYaw() == 180 || AngleUtils.get360RotationYaw() == 0) ?Math.abs(Minecraft.getMinecraft().thePlayer.posZ) % 1 > 0.3f && Math.abs(Minecraft.getMinecraft().thePlayer.posZ) % 1 < 0.7f :
+                Math.abs(Minecraft.getMinecraft().thePlayer.posX) % 1 > 0.3f && Math.abs(Minecraft.getMinecraft().thePlayer.posX) % 1 < 0.7f;
+
     }
 
 

@@ -88,13 +88,15 @@ public class CaneHarvester {
     public volatile static double deltaY = 0;
     public volatile static double initialX = 0;
     public volatile static double initialZ = 0;
-    public static float walkForwardDis = 5.9f;
     public static location currentLocation;
 
     public static boolean cookie = true;
     public static boolean godPot = true;
     public static IChatComponent header;
     public static IChatComponent footer;
+
+
+    public static BlockPos targetBlockPos = new BlockPos(10000, 10000, 10000);
 
 
     public int keybindA = mc.gameSettings.keyBindLeft.getKeyCode();
@@ -226,7 +228,7 @@ public class CaneHarvester {
             profitGUI.setLine(new GuiLineComponent(12,  Utils.formatInfo("Profit/hr", "$" + Utils.formatNumber(moneypersec * 60 * 60)), -1), 1);
             profitGUI.setLine(new GuiLineComponent(12, Utils.formatInfo("Profit/24hrs", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24)), -1), 2);
             profitGUI.setLine(new GuiLineComponent(12, Utils.formatInfo("Inventory price", "$" + Utils.formatNumber(totalMoney)), -1), 3);
-            profitGUI.setLine(new GuiLineComponent(12,  Utils.formatInfo("Hoe counter", "$" + Utils.formatNumber(SkyblockUtils.getHoeCounter())), -1), 4);
+            profitGUI.setLine(new GuiLineComponent(12,  Utils.formatInfo("Hoe counter",  Utils.formatNumber(SkyblockUtils.getHoeCounter())), -1), 4);
             if(mc.currentScreen == null) profitGUI.draw();
 
         }
@@ -255,7 +257,7 @@ public class CaneHarvester {
 
             }
             if (customKeyBinds[0].isPressed()) {
-               mc.displayGuiScreen(new GUI());
+                mc.displayGuiScreen(new GUI());
             }
 
         }
@@ -330,8 +332,8 @@ public class CaneHarvester {
             if (getLocation() == location.ISLAND && !selling) {
                 if(!rotating){
                     try {
-                        if(Boolean.TRUE.equals(Utils.<Boolean>getValueFromConfig(new JacobConfig(), "jacob"))) {
-                            if (SkyblockUtils.getJacobEventCounter() > Utils.<Integer>getValueFromConfig(new JacobConfig(), "jacobcap")) { //Jacob Config add back
+                        if(Config.<Boolean>get("jacob")) {
+                            if (SkyblockUtils.getJacobEventCounter() > Integer.parseInt(Config.get("jacob"))) { //Jacob Config add back
                                 ExecuteRunnable(JacobFailsafe);
                             }
                         }
@@ -365,7 +367,6 @@ public class CaneHarvester {
                 if (!locked) {
                     initializeVaraibles();
                     Utils.addCustomLog("Going : " + calculateDirection());
-                    walkForwardDis = calculateDirection() == direction.NONE ? 1.1f : 5.9f;
                     locked = true;
                 }
 
@@ -402,6 +403,7 @@ public class CaneHarvester {
                 //states
                 if (dy == 0 && !inFailsafe && !stuck) {
                     if (!walkingForward) { //normal
+
                         KeyBinding.setKeyBindState(keyBindSneak, false);
                         if (currentDirection.equals(direction.RIGHT))
                             KeyBinding.setKeyBindState(keybindD, true);
@@ -441,11 +443,8 @@ public class CaneHarvester {
                     if (shouldWalkForward() && !walkingForward && ((int) initialX != (int) mc.thePlayer.posX || (int) initialZ != (int) mc.thePlayer.posZ)) {
                         updateKeybinds(true, false, false, false);
                         walkingForward = true;
-
-
-                        walkForwardDis = calculateDirection() == direction.NONE ? 1.1f : 5.9f;
-                        Utils.addCustomLog("Walking forward, walking dis = " + walkForwardDis);
-
+                        targetBlockPos = calculateTargetBlockPos();
+                        Utils.addCustomLog("Target block : " + targetBlockPos.toString());
                         pushedOff = false;
                         initialX = mc.thePlayer.posX;
                         initialZ = mc.thePlayer.posZ;
@@ -453,10 +452,9 @@ public class CaneHarvester {
                 }
 
                 //chagnge back to left/right
-                if ((Math.abs(initialX - mc.thePlayer.posX) > walkForwardDis || Math.abs(initialZ - mc.thePlayer.posZ) > walkForwardDis) && walkingForward) {
-
+                if ((int)mc.thePlayer.posX == targetBlockPos.getX() && (int)mc.thePlayer.posZ == targetBlockPos.getZ() && walkingForward && Utils.isInCenterOfBlock()) {
                     updateKeybinds(false, false, false, false);
-                    if(InventoryUtils.getFirstSlotStone() != -1 && Boolean.TRUE.equals(Utils.<Boolean>getValueFromConfig(new MiscellaneousConfig(), "dropstone"))){
+                    if(InventoryUtils.getFirstSlotStone() != -1 && Config.<Boolean>get("dropstone")){
                         activateFailsafe();
                         ExecuteRunnable(clearStone);
                         return;
@@ -586,19 +584,31 @@ public class CaneHarvester {
 
             if (stuck || inFailsafe || walkingForward)
                 return;
+
             try {
-                do {
+               /* do {
                     Utils.addCustomLog("Pressing S");
                     updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
                     Thread.sleep(50);
                 }
                 while (BlockUtils.isWalkable(BlockUtils.getBackBlock()) && (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) || !BlockUtils.isWalkable(BlockUtils.getBlockAround(0, 2))));
 
-                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
-                if(Boolean.TRUE.equals(Utils.<Boolean>getValueFromConfig(new MiscellaneousConfig(), "resync")))
-                ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
+                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());*/
+                if(Config.<Boolean>get("resync"))
+                    ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
 
-
+                /*if(Config.<Boolean>get("resync"))
+                    ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
+                if(playerYaw == 180 || playerYaw == 0){
+                    if(Math.abs(mc.thePlayer.posZ) % 1 > 0.3f || Math.abs(mc.thePlayer.posZ) % 1 < 0.7f) return;
+                    do {
+                        Utils.addCustomLog("Pressing S");
+                        updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
+                        Thread.sleep(1);
+                    }
+                    while (Math.abs(mc.thePlayer.posZ) % 1 < 0.3f || Math.abs(mc.thePlayer.posZ) % 1 > 0.7f);
+                }
+                updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());*/
             } catch (Exception e) {
                 e.printStackTrace();
 
@@ -695,7 +705,7 @@ public class CaneHarvester {
                 elapsed += 10;
                 Thread.sleep(10);
             }
-            if (((float) count / total) > 0.60 && !selling && Boolean.TRUE.equals(Utils.<Boolean>getValueFromConfig(new MiscellaneousConfig(), "autosell")) && !inFailsafe && enabled) {
+            if (((float) count / total) > 0.60 && !selling && Config.<Boolean>get("autosell") && !inFailsafe && enabled) {
                 selling = true;
                 Utils.sendWebhook("Inventory full, Auto Selling!");
                 ExecuteRunnable(autoSell);
@@ -1113,6 +1123,21 @@ public class CaneHarvester {
         return location.LOBBY;
     }
 
+    BlockPos calculateTargetBlockPos(){
+        if(!BlockUtils.isWalkable(BlockUtils.getRightBlock()) || !BlockUtils.isWalkable(BlockUtils.getLeftBlock())){
+            if(!BlockUtils.isWalkable(BlockUtils.getRightBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock())){
+                return BlockUtils.getBlockPosAround(0, 1, 0);
+            } else {
+                return BlockUtils.getBlockPosAround(0, 6, 0);
+            }
+        }
+
+        Utils.addCustomLog("can't calculate target block!");
+        return new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ);
+
+
+    }
+
     direction calculateDirection() {
         ArrayList<Integer> unwalkableBlocks = new ArrayList<>();
         if (mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock().equals(Blocks.end_portal_frame)) {
@@ -1166,7 +1191,6 @@ public class CaneHarvester {
         beforeZ = mc.thePlayer.posZ;
         initialX = mc.thePlayer.posX;
         initialZ = mc.thePlayer.posZ;
-        walkForwardDis = 5.9f;
         rotating = false;
         bazaarLag = false;
         caged = false;

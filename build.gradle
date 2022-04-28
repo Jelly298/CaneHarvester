@@ -12,8 +12,9 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
         classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
+        classpath 'com.googlecode.json-simple:json-simple:1.1.1'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
 
     }
@@ -54,16 +55,7 @@ configurations {
     include
     implementation.extendsFrom(include)
 }
-/*dependencies {
-    compile('org.spongepowered:mixin:0.7.11-SNAPSHOT')
-    annotationProcessor('org.spongepowered:mixin:0.7.11-SNAPSHOT')
 
-    implementation('org.projectlombok:lombok:1.18.24')
-    annotationProcessor('org.projectlombok:lombok:1.18.22')
-
-    compile('com.googlecode.json-simple:json-simple:1.1.1')
-    implementation('com.googlecode.json-simple:json-simple:1.1.1')
-}*/
 dependencies {
     implementation('org.projectlombok:lombok:1.18.24')
     annotationProcessor('org.projectlombok:lombok:1.18.22')
@@ -99,6 +91,7 @@ test {
 shadowJar {
     dependencies {
         include(dependency('org.spongepowered:mixin'))
+        include(dependency('com.googlecode.json-simple:json-simple'))
 
     }
     exclude 'dummyThing', 'LICENSE.txt', 'org/**/*.html', 'META-INF/maven/**'
