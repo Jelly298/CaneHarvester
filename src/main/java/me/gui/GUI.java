@@ -1,79 +1,58 @@
 package me.gui;
 
-import me.CaneHarvester;
-import me.config.Config;
+import me.config.configTypes.JacobConfig;
+import me.config.configTypes.MiscellaneousConfig;
+import me.config.configTypes.WebhookConfig;
+import me.gui.JellyGui.GuiComponents.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiTextField;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
+import org.lwjgl.input.Keyboard;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 public class GUI extends GuiScreen {
 
-
-    int buttonWidth = 85;
-    int buttonHeight = 65;
-
-    int fieldWidth = 200;
-    int fieldHeight = 20;
-
-    int field2Width = 100;
-    int field2Height = 20;
-
-    private GuiTextField urlTextBox;
-    private GuiTextField jacobThresholdBox;
-
-    public static GuiDraggableComponent draggableProfitGUI = new GuiDraggableComponent(0, 2, 200, 77, new Color(0, 0, 0, 100).getRGB(), new ArrayList<>());
-
-
-    @Mod.EventHandler
-    public void postInit(FMLPostInitializationEvent event) {
+   // public static GuiMenuComponent DraggableProfitGUI = new GuiMenuComponent(0, 2, 140, 77, new Color(0, 0, 0, 100).getRGB(), new JacobConfig(), null);
+    public static GuiMenuComponent miscellaneousTab = new GuiMenuComponent(5, 5, 160, new Color(40, 40, 40).getRGB(), new MiscellaneousConfig(),
+           new GuiTitleComponent(25, "Miscellaneous", -1, new Color(0, 0, 0).getRGB()));
+    public static GuiMenuComponent webhookTab = new GuiMenuComponent(200, 5, 160, new Color(40, 40, 40).getRGB(), new WebhookConfig(),
+            new GuiTitleComponent(25, "Webhook", -1, new Color(0, 0, 0).getRGB()));
+    public static GuiMenuComponent jacobTab = new GuiMenuComponent(5, 180, 160, new Color(40, 40, 40).getRGB(), new JacobConfig(),
+            new GuiTitleComponent(25, "Jacob", -1, new Color(0, 0, 0).getRGB()));
 
 
 
+    public static void init() {
+        miscellaneousTab.addButton("Move GUI", 25, new Color(20, 20, 20).getRGB(), -1, new Color(200, 200, 200, 125).getRGB(), () -> Minecraft.getMinecraft().displayGuiScreen(new GUIDragScreen()));
     }
     @Override
     public void initGui() {
+
+
         super.initGui();
 
-        urlTextBox = new GuiTextField(1, Minecraft.getMinecraft().fontRendererObj, this.width/2 - fieldWidth + 140, this.height / 2 - fieldHeight / 2 + 60, fieldWidth, fieldHeight);
-        urlTextBox.setMaxStringLength(256);
-        urlTextBox.setText(Config.urlText == null ? "" : Config.urlText);
-        urlTextBox.setFocused(true);
-        jacobThresholdBox = new GuiTextField(2, Minecraft.getMinecraft().fontRendererObj, this.width/2 - field2Width + 140, this.height / 2 - field2Height / 2 + 100, field2Width, field2Height);
-        jacobThresholdBox.setMaxStringLength(7);
-        jacobThresholdBox.setText(Config.jacobThreshold == null ? "" : Config.jacobThreshold);
-        jacobThresholdBox.setFocused(false);
 
-        this.buttonList.add(new GuiBetterButton(0, this.width/2 - buttonWidth /2 ,  this.height/2 - buttonHeight /2, buttonWidth, buttonHeight, "Resync : " + (Config.resync ? "on" : "off")));
-        this.buttonList.add(new GuiBetterButton(1, this.width/2 - buttonWidth /2 ,  this.height/2 - buttonHeight /2 - 70, buttonWidth, buttonHeight, "Autosell : " + (Config.autosell ? "on" : "off")));
-        this.buttonList.add(new GuiBetterButton(2, this.width/2 - buttonWidth /2 ,  this.height/2 - buttonHeight /2 - 140, buttonWidth, buttonHeight, "Sell inventory"));
+
+        //GuiScreenComponent.initGui(); // will be called from mixin later
+      //  webhookTab.setTitle(new GuiTitleComponent(30, "Webhook", -1, new Color(0, 0, 0).getRGB()));
+
+   //0xa9a9a9 0x
 
 
     }
+
 
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         super.drawScreen(mouseX, mouseY, partialTicks);
 
-        //drawRect(0, 0, this.width, this.height, 0x30000000);
-        //this.drawDefaultBackground();
-        mc.fontRendererObj.drawStringWithShadow("Webhook URL", this.width/2 - 180, this.height / 2 + 60 - 3, -1);
-        mc.fontRendererObj.drawStringWithShadow("Jacob's Event limit", this.width/2 - 180, this.height / 2 + 100 - 3, -1);
-        draggableProfitGUI.draw(mouseX, mouseY, partialTicks);
-
-        urlTextBox.drawTextBox();
-        jacobThresholdBox.drawTextBox();
+        miscellaneousTab.draw(mouseX, mouseY, partialTicks);
+        webhookTab.draw(mouseX, mouseY, partialTicks);
+        jacobTab.draw(mouseX, mouseY, partialTicks);
 
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
@@ -87,69 +66,42 @@ public class GUI extends GuiScreen {
     @Override
     protected void actionPerformed(GuiButton button){
 
-        if(button.id == 0){
-            Config.resync = !Config.resync;
-            buttonList.get(0).displayString = "Resync : " + (Config.resync ? "on" : "off");
-        }
-        if(button.id == 1){
-            Config.autosell = !Config.autosell;
-            buttonList.get(1).displayString = "Autosell : " + (Config.autosell ? "on" : "off");
-        }
-        if(button.id == 2){
-            ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
-            executorService.execute(CaneHarvester.autoSell);
-            executorService.shutdown();
-        }
 
     }
-    protected void keyTyped(char par1, int par2)
+
+    @Override
+    public void onGuiClosed(){
+       // GuiScreenComponent.onGuiClosed(); // will be called from mixin later
+
+    }
+
+    public void keyTyped(char par1, int par2)
     {
         try {
-
-            super.keyTyped(par1, par2);
-            if(urlTextBox.isFocused())
-                urlTextBox.textboxKeyTyped(par1, par2);
-            if(jacobThresholdBox.isFocused()) {
-                if(Character.isDigit(par1) || par2 == 14) //14 -> delete key code
-                jacobThresholdBox.textboxKeyTyped(par1, par2);
+            if (par2 == Keyboard.KEY_ESCAPE) {
+                mc.thePlayer.closeScreen();
             }
+            //GuiScreenComponent.keyTyped(par1, par2); // will be called from mixin later
         }catch (Exception e){
             e.printStackTrace();
         }
+
 
     }
     public void updateScreen()
     {
         super.updateScreen();
-        urlTextBox.updateCursorCounter();
-        jacobThresholdBox.updateCursorCounter();
+        //GuiScreenComponent.updateScreen(); // will be called from mixin later
     }
-    protected void mouseClicked(int x, int y, int btn) {
+   public void mouseClicked(int x, int y, int btn) {
         try {
-            super.mouseClicked(x, y, btn);
-            if(x >= urlTextBox.xPosition && y >= urlTextBox.yPosition && x < urlTextBox.xPosition + urlTextBox.width && y < urlTextBox.yPosition + urlTextBox.height){
-                jacobThresholdBox.setFocused(false);
-                urlTextBox.mouseClicked(x, y, btn);
-            }
-            else if(x >= jacobThresholdBox.xPosition && y >= jacobThresholdBox.yPosition && x < jacobThresholdBox.xPosition + jacobThresholdBox.width && y < jacobThresholdBox.yPosition + jacobThresholdBox.height){
-                urlTextBox.setFocused(false);
-                jacobThresholdBox.mouseClicked(x, y, btn);
-            }
-            else {
-                urlTextBox.setFocused(false);
-                jacobThresholdBox.setFocused(false);
-            }
+           // GuiScreenComponent.mouseClicked(x, y, btn); // will be called from mixin later
 
         }catch(Exception e){
             e.printStackTrace();
         }
     }
-    @Override
-    public void onGuiClosed(){
-        Config.urlText = urlTextBox.getText().trim();
-        Config.jacobThreshold = jacobThresholdBox.getText().trim();
-        Config.writeConfig();
-    }
+
 
 
 }

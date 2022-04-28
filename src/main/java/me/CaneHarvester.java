@@ -1,31 +1,29 @@
 package me;
 
 import me.config.Config;
+import me.config.configTypes.JacobConfig;
+import me.config.configTypes.MiscellaneousConfig;
 import me.gui.GUI;
-import me.gui.GuiLineComponent;
-import me.utils.Utils;
+import me.gui.JellyGui.GuiComponents.GuiLineComponent;
+import me.gui.JellyGui.GuiComponents.GuiMenuComponent;
+import me.utils.*;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiChat;
-import net.minecraft.client.gui.GuiDisconnected;
-import net.minecraft.client.gui.GuiIngameMenu;
-import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.*;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.ContainerChest;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.*;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -122,8 +120,12 @@ public class CaneHarvester {
     static volatile int lastCounter = 0;
     static volatile int moneypersec = 0;
 
+    public static GuiMenuComponent profitGUI = new GuiMenuComponent(5, 5, 140, 0x70000000, null, null);
+
     long startTime = 0;
     long finalTime = 0;
+
+
 
     MouseHelper mouseHelper = new MouseHelper();
     static int playerYaw = 0;
@@ -161,24 +163,17 @@ public class CaneHarvester {
 
     @EventHandler
     public void init(FMLInitializationEvent event) {
+        Config.init();
         customKeyBinds[0] = new KeyBinding("Open GUI", Keyboard.KEY_RSHIFT, "CaneHarvester");
         customKeyBinds[1] = new KeyBinding("Toggle script", Keyboard.KEY_GRAVE, "CaneHarvester");
+        GUI.init();
         ClientRegistry.registerKeyBinding(customKeyBinds[0]);
         ClientRegistry.registerKeyBinding(customKeyBinds[1]);
-        try{
-            Config.readConfig();
-        }catch(Exception e){
-            Config.writeConfig();
-        }
-
-        GUI.draggableProfitGUI.addLine(null);
-        GUI.draggableProfitGUI.addLine(null);
-        GUI.draggableProfitGUI.addLine(null);
-        GUI.draggableProfitGUI.addLine(null);
-        GUI.draggableProfitGUI.addLine(null);
         ExecuteRunnable(checkPosChange);
 
     }
+
+
 
 
     @SubscribeEvent
@@ -203,14 +198,14 @@ public class CaneHarvester {
             ScheduleRunnable(WarpHome, 10, TimeUnit.SECONDS);
             Utils.sendWebhook("Hub detected. Applying failsafe");
         }
-        if ((event.message.getFormattedText().contains("DYNAMIC") || (event.message.getFormattedText().contains("Couldn't warp you")) && inFailsafe)) {
+        if ((event.message.getFormattedText().contains("DYNAMIC") || (event.message.getFormattedText().contains("Couldn't warp you")) || (event.message.getFormattedText().contains("sending commands too fast"))) && inFailsafe) {
             Utils.sendWebhook("Error while warping. Applying failsafe");
             error = true;
         }
         if ((event.message.getFormattedText().contains("SkyBlock Lobby") && !inFailsafe && enabled)) {
             Utils.sendWebhook("Lobby detected. Applying failsafe");
             activateFailsafe();
-            ScheduleRunnable(LeaveSBIsand, 10, TimeUnit.SECONDS);
+            ScheduleRunnable(Rejoin, 10, TimeUnit.SECONDS);
         }
         if (event.message.getFormattedText().contains("This server is too laggy")) {
             bazaarLag = true;
@@ -227,22 +222,12 @@ public class CaneHarvester {
     public void render(RenderGameOverlayEvent event) {
 
         if (event.type == RenderGameOverlayEvent.ElementType.TEXT) {
-
-
-          /*  GUI.drawRect(0,  2, 200, 77, new Color(0, 0, 0, 100).getRGB());
-            Utils.drawStringWithShadow(
-                    EnumChatFormatting.DARK_GREEN + "« " + EnumChatFormatting.DARK_GREEN + "" + EnumChatFormatting.BOLD + "Cane Harvester" + EnumChatFormatting.DARK_GREEN + " »", 5, 5, 1.2f, -1);
-            Utils.drawInfo("Profit/hr", "$" + Utils.formatNumber(moneypersec * 60 * 60), 20);
-            Utils.drawInfo("Profit/24hrs", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24), 35);
-            Utils.drawInfo("Inventory price", "$" + Utils.formatNumber(totalMoney), 50);
-            Utils.drawInfo("Hoe counter", Utils.formatNumber(getHoeCounter()), 65);*/
-
-            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 3, EnumChatFormatting.DARK_GREEN + "« " + EnumChatFormatting.DARK_GREEN + "" + EnumChatFormatting.BOLD + "Cane Harvester" + EnumChatFormatting.DARK_GREEN + " »", -1, 1.2f), 0);
-            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 18, Utils.formatInfo("Profit/hr", "$" + Utils.formatNumber(moneypersec * 60 * 60)), -1, 1), 1);
-            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 33, Utils.formatInfo("Profit/24hrs", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24)), -1, 1), 2);
-            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 48, Utils.formatInfo("Inventory price", "$" + Utils.formatNumber(totalMoney)), -1, 1), 3);
-            GUI.draggableProfitGUI.setLine(new GuiLineComponent(5, 63, Utils.formatInfo("Hoe counter", "$" + Utils.formatNumber(getHoeCounter())), -1, 1), 4);
-            GUI.draggableProfitGUI.draw();
+            profitGUI.setLine(new GuiLineComponent(12,  EnumChatFormatting.DARK_GREEN + "« " + EnumChatFormatting.DARK_GREEN + "" + EnumChatFormatting.BOLD + "Cane Harvester" + EnumChatFormatting.DARK_GREEN + " »", -1), 0);
+            profitGUI.setLine(new GuiLineComponent(12,  Utils.formatInfo("Profit/hr", "$" + Utils.formatNumber(moneypersec * 60 * 60)), -1), 1);
+            profitGUI.setLine(new GuiLineComponent(12, Utils.formatInfo("Profit/24hrs", "$" + Utils.formatNumber(moneypersec * 60 * 60 * 24)), -1), 2);
+            profitGUI.setLine(new GuiLineComponent(12, Utils.formatInfo("Inventory price", "$" + Utils.formatNumber(totalMoney)), -1), 3);
+            profitGUI.setLine(new GuiLineComponent(12,  Utils.formatInfo("Hoe counter", "$" + Utils.formatNumber(SkyblockUtils.getHoeCounter())), -1), 4);
+            if(mc.currentScreen == null) profitGUI.draw();
 
         }
 
@@ -288,7 +273,7 @@ public class CaneHarvester {
 
             currentLocation = getLocation();
             if (!rotating)
-                playerYaw = Math.round(Utils.get360RotationYaw() / 90) < 4 ? Math.round(Utils.get360RotationYaw() / 90) * 90 : 0;
+                playerYaw = Math.round(AngleUtils.get360RotationYaw() / 90) < 4 ? Math.round(AngleUtils.get360RotationYaw() / 90) * 90 : 0;
 
             int tempEsc = 0;
             int tempDEsc = 0;
@@ -322,8 +307,8 @@ public class CaneHarvester {
                 return;
             }
             if(TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) > 1000){
-                moneypersec = (int) ((getHoeCounter() - lastCounter) / (160 * 160 * 1.0d) * 51200);
-                lastCounter = getHoeCounter();
+                moneypersec = (int) ((SkyblockUtils.getHoeCounter() - lastCounter) / (160 * 160 * 1.0d) * 51200);
+                lastCounter = SkyblockUtils.getHoeCounter();
                 startTime = System.nanoTime();
             }
         }
@@ -345,8 +330,8 @@ public class CaneHarvester {
             if (getLocation() == location.ISLAND && !selling) {
                 if(!rotating){
                     try {
-                        if(Integer.parseInt(Config.jacobThreshold) != 0) {
-                            if (getJacobEventCounter() > Integer.parseInt(Config.jacobThreshold)) {
+                        if(Boolean.TRUE.equals(Utils.<Boolean>getValueFromConfig(new JacobConfig(), "jacob"))) {
+                            if (SkyblockUtils.getJacobEventCounter() > Utils.<Integer>getValueFromConfig(new JacobConfig(), "jacobcap")) { //Jacob Config add back
                                 ExecuteRunnable(JacobFailsafe);
                             }
                         }
@@ -373,7 +358,7 @@ public class CaneHarvester {
                 //angles (locked)
                 if (!inFailsafe) {
                     mc.thePlayer.rotationPitch = 0;
-                    Utils.hardRotate(playerYaw);
+                    AngleUtils.hardRotate(playerYaw);
                     KeyBinding.setKeyBindState(keybindAttack, true);
                 }
                 //INITIALIZE
@@ -391,7 +376,7 @@ public class CaneHarvester {
                     ExecuteRunnable(changeLayer);
                 }
                 if (falling && !rotating && !inFailsafe &&
-                        ((!Utils.isWalkable(Utils.getLeftBlock()) && !Utils.isWalkable(Utils.getFrontBlock())) || (!Utils.isWalkable(Utils.getRightBlock()) && !Utils.isWalkable(Utils.getFrontBlock())))) {
+                        ((!BlockUtils.isWalkable(BlockUtils.getLeftBlock()) && !BlockUtils.isWalkable(BlockUtils.getFrontBlock())) || (!BlockUtils.isWalkable(BlockUtils.getRightBlock()) && !BlockUtils.isWalkable(BlockUtils.getFrontBlock())))) {
                     Utils.addCustomChat("New layer detected", EnumChatFormatting.BLUE);
                     ExecuteRunnable(changeLayer);
                     enabled = false;
@@ -406,7 +391,7 @@ public class CaneHarvester {
                 }
 
                 //bedrock failsafe
-                if (blockStandingOn == Blocks.bedrock && !inFailsafe && !caged && bedrockCount() > 1) {
+                if (blockStandingOn == Blocks.bedrock && !inFailsafe && !caged && BlockUtils.bedrockCount() > 1) {
                     enabled = false;
                     KeyBinding.setKeyBindState(keybindAttack, false);
                     ScheduleRunnable(islandCage, 157, TimeUnit.MILLISECONDS);
@@ -427,7 +412,7 @@ public class CaneHarvester {
                     } else { // walking forward
 
                         //hole drop fix (prevent sneaking at the hole)
-                        KeyBinding.setKeyBindState(keyBindSneak, !Utils.isWalkable(blockStandingOn));
+                        KeyBinding.setKeyBindState(keyBindSneak, !BlockUtils.isWalkable(blockStandingOn));
 
                         //unleash keys
                         if (lastLaneDirection.equals(direction.LEFT))
@@ -471,7 +456,7 @@ public class CaneHarvester {
                 if ((Math.abs(initialX - mc.thePlayer.posX) > walkForwardDis || Math.abs(initialZ - mc.thePlayer.posZ) > walkForwardDis) && walkingForward) {
 
                     updateKeybinds(false, false, false, false);
-                    if(Utils.getFirstSlotStone() != -1){
+                    if(InventoryUtils.getFirstSlotStone() != -1 && Boolean.TRUE.equals(Utils.<Boolean>getValueFromConfig(new MiscellaneousConfig(), "dropstone"))){
                         activateFailsafe();
                         ExecuteRunnable(clearStone);
                         return;
@@ -483,11 +468,11 @@ public class CaneHarvester {
                     initialX = mc.thePlayer.posX;
                     initialZ = mc.thePlayer.posZ;
 
-                    if (!Utils.isWalkable(Utils.getLeftBlock()) || !Utils.isWalkable(Utils.getBlockAround(-2, 0))) {
+                    if (!BlockUtils.isWalkable(BlockUtils.getLeftBlock()) || !BlockUtils.isWalkable(BlockUtils.getBlockAround(-2, 0))) {
                         //set last lane dir
                         currentDirection = direction.RIGHT;
                         lastLaneDirection = direction.RIGHT;
-                    } else if (!Utils.isWalkable(Utils.getRightBlock()) || !Utils.isWalkable(Utils.getBlockAround(2, 0))) {
+                    } else if (!BlockUtils.isWalkable(BlockUtils.getRightBlock()) || !BlockUtils.isWalkable(BlockUtils.getBlockAround(2, 0))) {
                         currentDirection = direction.LEFT;
                         lastLaneDirection = direction.LEFT;
                     }
@@ -516,7 +501,7 @@ public class CaneHarvester {
         public void run() {
             try {
                 Utils.addCustomChat("Crop limit reached. Preparing to warp to lobby...");
-                int waitTime = getRemainingJacobTime();
+                int waitTime = SkyblockUtils.getRemainingJacobTime();
                 Utils.sendWebhook("Crop limit reached. Waiting " + waitTime + " seconds");
                 activateFailsafe();
                 Utils.addCustomLog("Waiting " + waitTime + " seconds");
@@ -581,7 +566,7 @@ public class CaneHarvester {
                     Thread.sleep(1000);
                     if (!inTPPad) {
                         playerYaw = Math.round(Math.abs(playerYaw - 180));
-                        Utils.smoothRotateClockwise(180);
+                        AngleUtils.smoothRotateClockwise(180);
                     }
                     Thread.sleep(5000);
                     rotating = false;
@@ -607,9 +592,10 @@ public class CaneHarvester {
                     updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), true, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
                     Thread.sleep(50);
                 }
-                while (Utils.isWalkable(Utils.getBackBlock()) && (!Utils.isWalkable(Utils.getFrontBlock()) || !Utils.isWalkable(Utils.getBlockAround(0, 2))));
+                while (BlockUtils.isWalkable(BlockUtils.getBackBlock()) && (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) || !BlockUtils.isWalkable(BlockUtils.getBlockAround(0, 2))));
 
                 updateKeybinds(mc.gameSettings.keyBindForward.isKeyDown(), false, mc.gameSettings.keyBindLeft.isKeyDown(), mc.gameSettings.keyBindRight.isKeyDown());
+                if(Boolean.TRUE.equals(Utils.<Boolean>getValueFromConfig(new MiscellaneousConfig(), "resync")))
                 ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
 
 
@@ -709,7 +695,7 @@ public class CaneHarvester {
                 elapsed += 10;
                 Thread.sleep(10);
             }
-            if (((float) count / total) > 0.60 && !selling && Config.autosell && !inFailsafe && enabled) {
+            if (((float) count / total) > 0.60 && !selling && Boolean.TRUE.equals(Utils.<Boolean>getValueFromConfig(new MiscellaneousConfig(), "autosell")) && !inFailsafe && enabled) {
                 selling = true;
                 Utils.sendWebhook("Inventory full, Auto Selling!");
                 ExecuteRunnable(autoSell);
@@ -732,11 +718,11 @@ public class CaneHarvester {
             updateKeybinds(false, false, false, false);
             Thread.sleep(800);
             updateKeybinds(false, false, true, false);
-            Utils.sineRotateCW(45, 0.4);
+            AngleUtils.sineRotateCW(45, 0.4f);
             Thread.sleep(100);
             updateKeybinds(false, false, false, false);
             Thread.sleep(1500);
-            Utils.sineRotateAWC(84, 0.5);
+            AngleUtils.sineRotateACW(84, 0.5f);
             updateKeybinds(false, false, false, true);
             Thread.sleep(100);
             updateKeybinds(false, false, false, false);
@@ -752,11 +738,11 @@ public class CaneHarvester {
         try {
             Utils.addCustomLog("Waiting till rotate head");
             Thread.sleep(4000);
-            Utils.smoothRotateAnticlockwise(77, 2);
+            AngleUtils.smoothRotateAnticlockwise(77, 2);
             Thread.sleep(1000);
             updateKeybinds(true, false, false, false);
             KeyBinding.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), true);
-            while (Utils.getFrontBlock() != Blocks.spruce_stairs) {
+            while (BlockUtils.getFrontBlock() != Blocks.spruce_stairs) {
                 Utils.addCustomLog("Not reached bazaar");
                 Thread.sleep(50);
             }
@@ -774,15 +760,15 @@ public class CaneHarvester {
                 Thread.sleep(600);
             }
             if (mc.thePlayer.openContainer instanceof ContainerChest) {
-                clickWindow(mc.thePlayer.openContainer.windowId, 0);
+                InventoryUtils.clickWindow(mc.thePlayer.openContainer.windowId, 0);
                 Thread.sleep(1000);
-                clickWindow(mc.thePlayer.openContainer.windowId, 12);
+                InventoryUtils.clickWindow(mc.thePlayer.openContainer.windowId, 12);
                 Thread.sleep(1000);
-                clickWindow(mc.thePlayer.openContainer.windowId, 10);
+                InventoryUtils.clickWindow(mc.thePlayer.openContainer.windowId, 10);
                 Thread.sleep(1000);
-                clickWindow(mc.thePlayer.openContainer.windowId, 10);
+                InventoryUtils.clickWindow(mc.thePlayer.openContainer.windowId, 10);
                 Thread.sleep(1000);
-                clickWindow(mc.thePlayer.openContainer.windowId, 12);
+                InventoryUtils.clickWindow(mc.thePlayer.openContainer.windowId, 12);
                 Thread.sleep(1000);
                 mc.thePlayer.closeScreen();
             }
@@ -830,7 +816,7 @@ public class CaneHarvester {
     };
     Runnable clearStone = () -> {
         try {
-            int slotID = Utils.getFirstSlotStone();
+            int slotID = InventoryUtils.getFirstSlotStone();
             if(slotID != -1) {
                 Utils.sendWebhook("Found stone. Attempting to remove it");
                 Utils.addCustomLog("Found stone. Attempting to remove it");
@@ -846,12 +832,12 @@ public class CaneHarvester {
                 mc.playerController.windowClick(mc.thePlayer.inventoryContainer.windowId, 35 + 7, 0, 0, mc.thePlayer);
                 Thread.sleep(300);
                 // mc.thePlayer.closeScreen();
-                if (Utils.isWalkable(Utils.getRightBlock())) {
+                if (BlockUtils.isWalkable(BlockUtils.getRightBlock())) {
                     right = true;
-                    Utils.smoothRotateAnticlockwise(90, 2.5);
+                    AngleUtils.smoothRotateAnticlockwise(90, 2.5f);
                 } else{
                     right = false;
-                    Utils.smoothRotateClockwise(90, 2.5);
+                    AngleUtils.smoothRotateClockwise(90, 2.5f);
                 }
                 Thread.sleep(400);
                 mc.thePlayer.inventory.currentItem = -1 + 7;
@@ -860,10 +846,10 @@ public class CaneHarvester {
                 Utils.addCustomLog("Dropped successfully");
                 Thread.sleep(100);
                 if (right) {
-                    Utils.smoothRotateClockwise(90, 2.5);
+                    AngleUtils.smoothRotateClockwise(90, 2.5f);
                     Thread.sleep(1000);
                 } else {
-                    Utils.smoothRotateAnticlockwise(90, 2.5);
+                    AngleUtils.smoothRotateAnticlockwise(90, 2.5f);
                     Thread.sleep(1000);
                 }
                 Utils.addCustomLog("Re-enabling script");
@@ -930,7 +916,7 @@ public class CaneHarvester {
 
             sellInventory();
 
-            if (findItemInventory("Large Enchanted Agronomy Sack") == -1) {
+            if (InventoryUtils.findItemInventory("Large Enchanted Agronomy Sack") == -1) {
                 Utils.addCustomLog("No sack detected, resuming");
                 Thread.sleep(100);
                 mc.thePlayer.inventory.currentItem = hoeSlot;
@@ -942,19 +928,19 @@ public class CaneHarvester {
             }
             Utils.addCustomLog("Preparing to open sack");
             Thread.sleep(1000);
-            openSack();
+            PlayerUtils.openSack();
 
             Utils.addCustomLog("Counting");
             // Count all items in sack NPC
             for (int i = 0; i < NPCSellSlots.length; i++) {
-                NPCSellSlotCounts[i] = countSack(NPCSellSlots[i]);
+                NPCSellSlotCounts[i] = InventoryUtils.countSack(NPCSellSlots[i]);
                 Utils.addCustomLog("NPCSellSlotCount : " + NPCSellSlotCounts[i]);
             }
 
 
             // Count all items in sack BZ
             for (int i = 0; i < BZSellSlots.length; i++) {
-                BZSellSlotCounts[i] = countSack(BZSellSlots[i]);
+                BZSellSlotCounts[i] = InventoryUtils.countSack(BZSellSlots[i]);
                 Utils.addCustomLog("BazaarSellSlotCount : " + BZSellSlotCounts[i]);
             }
 
@@ -962,14 +948,14 @@ public class CaneHarvester {
             for (int i = 0; i < NPCSellSlots.length; i++) {
                 while (NPCSellSlotCounts[i] != 0) {
                     if (!(mc.currentScreen instanceof GuiContainer)) {
-                        openSack();
+                        PlayerUtils.openSack();
                     }
                     while (mc.thePlayer.inventory.getFirstEmptyStack() != -1 && NPCSellSlotCounts[i] != 0) {
                         Utils.addCustomLog("Collecting");
-                        clickWindow(mc.thePlayer.openContainer.windowId, NPCSellSlots[i]);
-                        waitForItem(NPCSellSlots[i], "");
+                        InventoryUtils.clickWindow(mc.thePlayer.openContainer.windowId, NPCSellSlots[i]);
+                        InventoryUtils.waitForItem(NPCSellSlots[i], "");
                         Thread.sleep(100);
-                        NPCSellSlotCounts[i] = countSack(NPCSellSlots[i]);
+                        NPCSellSlotCounts[i] = InventoryUtils.countSack(NPCSellSlots[i]);
                     }
                     sellInventory();
                 }
@@ -979,9 +965,9 @@ public class CaneHarvester {
             // If any remaining in sack, sell to bazaar
             for (int i = 0; i < BZSellSlots.length; i++) {
                 if (BZSellSlotCounts[i] != 0) {
-                    openBazaar();
-                    waitForItemClick(11, "Selling whole inventory", 39, "Sell Sacks Now");
-                    waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
+                    PlayerUtils.openBazaar();
+                    InventoryUtils.waitForItemClick(11, "Selling whole inventory", 39, "Sell Sacks Now");
+                    InventoryUtils.waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
                 }
             }
 
@@ -1002,7 +988,7 @@ public class CaneHarvester {
             Minecraft mc = Minecraft.getMinecraft();
             Utils.addCustomLog("Selling Inventory");
             // Sell to NPC
-            openTrades();
+            PlayerUtils.openTrades();
             Thread.sleep(500);
             for (int j = 0; j < 36; j++) {
                 ItemStack sellStack = mc.thePlayer.inventory.getStackInSlot(j);
@@ -1016,7 +1002,7 @@ public class CaneHarvester {
                     ) {
                         if(!name.contains("Hoe")) {
                             Utils.addCustomLog("Found stack, selling");
-                            clickWindow(mc.thePlayer.openContainer.windowId, (j < 9 ? j + 45 + 36 : j + 45));
+                            InventoryUtils.clickWindow(mc.thePlayer.openContainer.windowId, (j < 9 ? j + 45 + 36 : j + 45));
                             Thread.sleep(200);
                         }
                     }
@@ -1032,29 +1018,29 @@ public class CaneHarvester {
                     String name = sellStack.getDisplayName();
                     if (name.contains("Carrot") && !name.contains("Hoe")) {
                         Utils.addCustomLog("Found carrots, selling");
-                        openBazaar();
-                        waitForItemClick(12, "Carrot", 0, "Farming");
-                        waitForItemClick(29, "Sell Inventory Now", 12, "Carrot", "Enchanted");
-                        waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
-                        waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
+                        PlayerUtils.openBazaar();
+                        InventoryUtils.waitForItemClick(12, "Carrot", 0, "Farming");
+                        InventoryUtils.waitForItemClick(29, "Sell Inventory Now", 12, "Carrot", "Enchanted");
+                        InventoryUtils.waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
+                        InventoryUtils.waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
                         Utils.addCustomLog("Successfully sold all carrots");
                     }
                     if (name.contains("Potato") && !name.contains("Hoe")) {
                         Utils.addCustomLog("Found potatoes, selling");
-                        openBazaar();
-                        waitForItemClick(13, "Potato", 0, "Farming");
-                        waitForItemClick(29, "Sell Inventory Now", 13, "Potato", "Enchanted");
-                        waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
-                        waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
+                        PlayerUtils.openBazaar();
+                        InventoryUtils.waitForItemClick(13, "Potato", 0, "Farming");
+                        InventoryUtils.waitForItemClick(29, "Sell Inventory Now", 13, "Potato", "Enchanted");
+                        InventoryUtils.waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
+                        InventoryUtils.waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
                         Utils.addCustomLog("Successfully sold all potatoes");
                     }
                     if ((name.contains("Wheat") || name.contains("Hay Bale") || name.contains("Bread")) && !name.contains("Hoe")) {
                         Utils.addCustomLog("Found wheat, selling");
-                        openBazaar();
-                        waitForItemClick(11, "Wheat & Seeds", 0, "Farming");
-                        waitForItemClick(29, "Sell Inventory Now", 11, "Wheat & Seeds");
-                        waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
-                        waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
+                        PlayerUtils.openBazaar();
+                        InventoryUtils.waitForItemClick(11, "Wheat & Seeds", 0, "Farming");
+                        InventoryUtils.waitForItemClick(29, "Sell Inventory Now", 11, "Wheat & Seeds");
+                        InventoryUtils.waitForItemClick(11, "Selling whole inventory", 29, "Sell Inventory Now");
+                        InventoryUtils.waitForItemClick(11, "Items sold!", 11, "Selling whole inventory");
                         Utils.addCustomLog("Successfully sold all wheat");
                     }
                 }
@@ -1066,28 +1052,6 @@ public class CaneHarvester {
         }
     }
 
-    public static void clickWindow(int windowID, int slotID, int button) {
-        Minecraft mc = Minecraft.getMinecraft();
-        mc.playerController.windowClick(windowID, slotID, button, 0, mc.thePlayer);
-        Utils.addCustomLog("Clicking slot : " + slotID);
-    }
-
-    int bedrockCount() {
-        int r = 4;
-        int count = 0;
-        BlockPos playerPos = Minecraft.getMinecraft().thePlayer.getPosition();
-        playerPos.add(0, 1, 0);
-        Vec3i vec3i = new Vec3i(r, r, r);
-        Vec3i vec3i2 = new Vec3i(r, r, r);
-        for (BlockPos blockPos : BlockPos.getAllInBox(playerPos.add(vec3i), playerPos.subtract(vec3i2))) {
-            IBlockState blockState = Minecraft.getMinecraft().theWorld.getBlockState(blockPos);
-            if (blockState.getBlock() == Blocks.bedrock) {
-                count++;
-            }
-        }
-        Utils.addCustomLog("Counted bedrock: " + count);
-        return count;
-    }
 
     void toggle() {
 
@@ -1138,8 +1102,8 @@ public class CaneHarvester {
     }
 
     location getLocation() {
-        for (String line : Utils.getSidebarLines()) {
-            String cleanedLine = Utils.cleanSB(line);
+        for (String line : SkyblockUtils.getSidebarLines()) {
+            String cleanedLine = SkyblockUtils.cleanSB(line);
             if (cleanedLine.contains("Village") || cleanedLine.contains("Bazaar")) {
                 return location.HUB;
             } else if (cleanedLine.contains("Island")) {
@@ -1149,31 +1113,17 @@ public class CaneHarvester {
         return location.LOBBY;
     }
 
-    int getJacobEventCounter(){
-        try {
-            for (String line : Utils.getSidebarLines()) {
-                String cleanedLine = Utils.cleanSB(line);
-                if (cleanedLine.contains("with")) {
-                    return Integer.parseInt(cleanedLine.substring(cleanedLine.lastIndexOf(" ") + 1).replace(",", ""));
-                }
-
-            }
-        }catch(Exception e) {
-        }
-        return 0;
-    }
-
     direction calculateDirection() {
         ArrayList<Integer> unwalkableBlocks = new ArrayList<>();
         if (mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock().equals(Blocks.end_portal_frame)) {
             for (int i = -3; i < 3; i++) {
-                if (!Utils.isWalkable(Utils.getBlockAround(i, 0, 1))) {
+                if (!BlockUtils.isWalkable(BlockUtils.getBlockAround(i, 0, 1))) {
                     unwalkableBlocks.add(i);
                 }
             }
         } else {
             for (int i = -3; i < 3; i++) {
-                if (!Utils.isWalkable(Utils.getBlockAround(i, 0))) {
+                if (!BlockUtils.isWalkable(BlockUtils.getBlockAround(i, 0))) {
                     unwalkableBlocks.add(i);
                 }
             }
@@ -1181,7 +1131,7 @@ public class CaneHarvester {
 
         if (unwalkableBlocks.size() == 0)
             return direction.RIGHT;
-        else if (unwalkableBlocks.size() > 1 && hasPosAndNeg(unwalkableBlocks)) {
+        else if (unwalkableBlocks.size() > 1 && Utils.arrayHasPosAndNeg(unwalkableBlocks)) {
             return direction.NONE;
         } else if (unwalkableBlocks.get(0) > 0)
             return direction.LEFT;
@@ -1190,58 +1140,16 @@ public class CaneHarvester {
     }
 
     boolean shouldWalkForward() {
-        return (Utils.isWalkable(Utils.getBackBlock()) && Utils.isWalkable(Utils.getFrontBlock())) ||
-                (!Utils.isWalkable(Utils.getBackBlock()) && !Utils.isWalkable(Utils.getLeftBlock())) ||
-                (!Utils.isWalkable(Utils.getBackBlock()) && !Utils.isWalkable(Utils.getRightBlock())) ||
-                (!Utils.isWalkable(Utils.getFrontBlock()) && !Utils.isWalkable(Utils.getRightBlock())) ||
-                (!Utils.isWalkable(Utils.getFrontBlock()) && !Utils.isWalkable(Utils.getLeftBlock()));
+        return (BlockUtils.isWalkable(BlockUtils.getBackBlock()) && BlockUtils.isWalkable(BlockUtils.getFrontBlock())) ||
+                (!BlockUtils.isWalkable(BlockUtils.getBackBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock())) ||
+                (!BlockUtils.isWalkable(BlockUtils.getBackBlock()) && !BlockUtils.isWalkable(BlockUtils.getRightBlock())) ||
+                (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) && !BlockUtils.isWalkable(BlockUtils.getRightBlock())) ||
+                (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock()));
     }
 
-    boolean hasPosAndNeg(ArrayList<Integer> ar) {
-        boolean hasPos = false;
-        boolean hasNeg = false;
-        for (Integer integer : ar) {
-            if (integer < 0)
-                hasNeg = true;
-            else
-                hasPos = true;
-        }
-        return hasPos && hasNeg;
 
-    }
 
-    int getDensityPercentage(direction oppositeDir) {
-        try {
-            ArrayList<Block> blocks = new ArrayList<>();
-            if (oppositeDir == direction.LEFT) {
-                for (int i = 3; i < 6; i++)
-                    blocks.add(Utils.getBlockAround(i, 0, 1));
-            } else {
-                for (int i = 3; i < 6; i++)
-                    blocks.add(Utils.getBlockAround(-i, 0, 1));
-            }
 
-            int totalBlock = blocks.size();
-            int totalSugarcaneBlock = 0;
-            for (Block block : blocks) {
-                if (block.equals(Blocks.reeds))
-                    totalSugarcaneBlock++;
-            }
-            if(totalSugarcaneBlock == 0 || totalBlock == 0)
-                return 0;
-
-            return (int) (totalSugarcaneBlock / (totalBlock * 1.0d) * 100);
-        } catch (Exception e) {
-
-        }
-        return -1;
-
-    }
-
-    static void clickWindow(int windowID, int slotID) {
-        Minecraft mc = Minecraft.getMinecraft();
-        mc.playerController.windowClick(windowID, slotID, 0, 0, mc.thePlayer);
-    }
     void initializeVaraibles() {
         deltaX = 10000;
         deltaZ = 10000;
@@ -1269,207 +1177,38 @@ public class CaneHarvester {
 
         setspawnLag = false;
     }
-    int getHoeCounter() {
-        try {
-            if (mc.thePlayer.getHeldItem().getDisplayName().contains("Turing")) {
-                final ItemStack stack = Minecraft.getMinecraft().thePlayer.getHeldItem();
-                if (stack != null && stack.hasTagCompound()) {
-                    final NBTTagCompound tag = stack.getTagCompound();
-                    if (tag.hasKey("ExtraAttributes", 10)) {
-                        final NBTTagCompound ea = tag.getCompoundTag("ExtraAttributes");
-                        if (ea.hasKey("mined_crops", 99)) {
-                            return ea.getInteger("mined_crops");
-                        } else if (ea.hasKey("farmed_cultivating", 99)) {
-                            return ea.getInteger("farmed_cultivating");
-                        }
-                    }
-                }
-            }
-        } catch(Exception e){
-        }
-        return 0;
-    }
-    int getRemainingJacobTime(){
-        try {
-            String myData = "";
-            for (String line : Utils.getSidebarLines()) {
-                String cleanedLine = Utils.cleanSB(line);
-                if (cleanedLine.contains("Sugar Cane") || cleanedLine.contains("Mushroom")) {
-                    myData = cleanedLine;
-                }
-            }
-            myData = myData.substring(myData.lastIndexOf(" ") + 1);
-            myData = myData.substring(0, myData.length() - 1);
-            String[] time = myData.split("m");
-            return Integer.parseInt(time[0]) * 60 + Integer.parseInt(time[1]);
 
-        }catch(Exception e) {
-        }
 
-        return 0;
-    }
-    public static void openSack() {
-        int sackSlot = findItemInventory("Large Enchanted Agronomy Sack");
-        openSBMenu();
-        Minecraft mc = Minecraft.getMinecraft();
+    int getDensityPercentage(direction oppositeDir) {
         try {
-            ItemStack stack = mc.thePlayer.openContainer.getSlot(31).getStack();
-            ItemStack clickStack = mc.thePlayer.openContainer.getSlot(sackSlot + 45).getStack();
-            while (stack == null || !stack.getDisplayName().contains("Close")) {
-                clickStack = mc.thePlayer.openContainer.getSlot(sackSlot + 45).getStack();
-                stack = mc.thePlayer.openContainer.getSlot(31).getStack();
-                if (clickStack != null && clickStack.getDisplayName().contains("Large Enchanted Agronomy Sack")) {
-                    clickWindow(mc.thePlayer.openContainer.windowId, sackSlot + 45, 1);
-                }
-                Thread.sleep(500);
+            ArrayList<Block> blocks = new ArrayList<>();
+            if (oppositeDir == direction.LEFT) {
+                for (int i = 3; i < 6; i++)
+                    blocks.add(BlockUtils.getBlockAround(i, 0, 1));
+            } else {
+                for (int i = 3; i < 6; i++)
+                    blocks.add(BlockUtils.getBlockAround(-i, 0, 1));
             }
-            return;
+
+            int totalBlock = blocks.size();
+            int totalSugarcaneBlock = 0;
+            for (Block block : blocks) {
+                if (block.equals(Blocks.reeds))
+                    totalSugarcaneBlock++;
+            }
+            if(totalSugarcaneBlock == 0 || totalBlock == 0)
+                return 0;
+
+            return (int) (totalSugarcaneBlock / (totalBlock * 1.0d) * 100);
         } catch (Exception e) {
-            e.printStackTrace();
-            Utils.addCustomLog("Error found");
-            return;
-        }
-    }
-    public static int countSack(int slotID) {
-        Minecraft mc = Minecraft.getMinecraft();
-        ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-        NBTTagList list = stack.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
-        Pattern pattern = Pattern.compile("^([a-zA-Z]+): ([0-9]+)(.*)");
-        for (int j = 0; j < list.tagCount(); j++) {
-            Matcher matcher = pattern.matcher(StringUtils.stripControlCodes(list.getStringTagAt(j)));
-            if (matcher.matches()) {
-                Utils.addCustomLog("Stored: " + matcher.group(2));
-                return Integer.parseInt(matcher.group(2));
-            }
-        }
-        return 0;
-    }
-    public static boolean openTrades() {
-        openSBMenu();
-        waitForItemClick(48, "Go Back", 22, "Trades");
-        return (Minecraft.getMinecraft().thePlayer.openContainer.getSlot(49).getStack().getItem() == Item.getItemFromBlock(Blocks.hopper));
-    }
-    public static void waitForItem(int slotID, String displayName) {
-        try {
-            Minecraft mc = Minecraft.getMinecraft();
-            ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-            while (stack == null || !stack.getDisplayName().contains(displayName)) {
-                stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-                Thread.sleep(100);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-    public static int findItemInventory(String name) {
-        for (int i = 0; i < 36; i++) {
-            ItemStack stack = Minecraft.getMinecraft().thePlayer.inventory.getStackInSlot(i);
-            if (stack != null) {
-                if (stack.getDisplayName().contains(name)) {
-                    return i + (i < 9 ? 36 : 0);
-                }
-            }
+
         }
         return -1;
-    }
-    public static void openSBMenu() {
-        try {
-            Minecraft mc = Minecraft.getMinecraft();
-            mc.thePlayer.closeScreen();
-            mc.thePlayer.inventory.currentItem = 8;
-            Thread.sleep(500);
-            KeyBinding.onTick(mc.gameSettings.keyBindUseItem.getKeyCode());
-            while (!(mc.currentScreen instanceof GuiContainer)) {
-                KeyBinding.onTick(mc.gameSettings.keyBindUseItem.getKeyCode());
-                Thread.sleep(100);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-    public static void waitForItemClick(int slotID, String displayName, int clickSlotID, String clickDisplayName) {
-        try {
-            Minecraft mc = Minecraft.getMinecraft();
-            ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-            ItemStack clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
-            while (stack == null || !stack.getDisplayName().contains(displayName)) {
-                clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
-                stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-                if (clickStack != null && clickStack.getDisplayName().contains(clickDisplayName)) {
-                    clickWindow(mc.thePlayer.openContainer.windowId, clickSlotID);
-                }
-                Thread.sleep(100);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-    public static void waitForItemClick(int slotID, String displayName, int clickSlotID, String clickDisplayName, String exclude) {
-        try {
-            Minecraft mc = Minecraft.getMinecraft();
-            ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-            ItemStack clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
-            while (stack == null || (!stack.getDisplayName().contains(displayName))) {
-                clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
-                stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-                if (clickStack != null && (clickStack.getDisplayName().contains(clickDisplayName) && !clickStack.getDisplayName().contains(exclude))) {
-                    clickWindow(mc.thePlayer.openContainer.windowId, clickSlotID);
-                }
-                Thread.sleep(100);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
     }
 
-    public static void waitForItemClick(int slotID, String displayName, int clickSlotID, Item item) {
-        try {
-            Minecraft mc = Minecraft.getMinecraft();
-            ItemStack stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-            ItemStack clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
-            while (stack == null || !stack.getDisplayName().contains(displayName)) {
-                clickStack = mc.thePlayer.openContainer.getSlot(clickSlotID).getStack();
-                stack = mc.thePlayer.openContainer.getSlot(slotID).getStack();
-                if (checkItem(clickStack, item)) {
-                    clickWindow(mc.thePlayer.openContainer.windowId, clickSlotID);
-                }
-                Thread.sleep(100);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-    public static boolean openBazaar() {
-        try {
-            Minecraft mc = Minecraft.getMinecraft();
-            mc.thePlayer.closeScreen();
-            Thread.sleep(100);
-            mc.thePlayer.sendChatMessage("/bz");
-            while (!(mc.currentScreen instanceof GuiContainer)) {
-                Thread.sleep(100);
-            }
-            return true;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-    public static boolean checkItem(int slotID, Block item) {
-        ItemStack stack = Minecraft.getMinecraft().thePlayer.openContainer.getSlot(slotID).getStack();
-        return stack != null && stack.getItem() == Item.getItemFromBlock(item);
-    }
-
-    public static boolean checkItem(ItemStack stack, Block item) {
-        return stack != null && stack.getItem() == Item.getItemFromBlock(item);
-    }
-
-    public static boolean checkItem(int slotID, Item item) {
-        ItemStack stack = Minecraft.getMinecraft().thePlayer.openContainer.getSlot(slotID).getStack();
-        return stack != null && stack.getItem() == item;
-    }
-
-    public static boolean checkItem(ItemStack stack, Item item) {
-        return stack != null && stack.getItem() == item;
+    void reconnect() {
+        FMLClientHandler.instance().connectToServer((GuiScreen)new GuiMultiplayer((GuiScreen)new GuiMainMenu()), new ServerData("Hypixel", "mc.hypixel.net", false));
     }
 
 

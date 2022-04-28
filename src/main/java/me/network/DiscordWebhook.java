@@ -1,4 +1,4 @@
-package me.webhook;
+package me.network;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.awt.Color;

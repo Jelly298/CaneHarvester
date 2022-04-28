@@ -1,4 +1,3 @@
-
 buildscript {
     repositories {
         // mavenCentral();
@@ -16,6 +15,7 @@ buildscript {
         classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
         classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+
     }
 }
 
@@ -50,10 +50,29 @@ repositories {
     }
     mavenCentral()
 }
-
-dependencies {
+configurations {
+    include
+    implementation.extendsFrom(include)
+}
+/*dependencies {
     compile('org.spongepowered:mixin:0.7.11-SNAPSHOT')
     annotationProcessor('org.spongepowered:mixin:0.7.11-SNAPSHOT')
+
+    implementation('org.projectlombok:lombok:1.18.24')
+    annotationProcessor('org.projectlombok:lombok:1.18.22')
+
+    compile('com.googlecode.json-simple:json-simple:1.1.1')
+    implementation('com.googlecode.json-simple:json-simple:1.1.1')
+}*/
+dependencies {
+    implementation('org.projectlombok:lombok:1.18.24')
+    annotationProcessor('org.projectlombok:lombok:1.18.22')
+
+    implementation('org.spongepowered:mixin:0.8.5-SNAPSHOT')
+    annotationProcessor('org.spongepowered:mixin:0.7.11-SNAPSHOT')
+
+    include('com.googlecode.json-simple:json-simple:1.1.1')
+    implementation('com.googlecode.json-simple:json-simple:1.1.1')
 }
 
 
@@ -91,7 +110,7 @@ mixin {
     disableTargetValidator
     defaultObfuscationEnv searge
     add sourceSets.main, 'mixins.scmath.refmap.json'
-   // config 'mixins.refmap.json'
+    // config 'mixins.refmap.json'
 }
 
 reobf {
