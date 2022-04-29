@@ -1,5 +1,6 @@
 package me.mixins;
 
+import me.config.Config;
 import net.minecraft.block.Block;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
@@ -19,13 +20,12 @@ public class MixinBlock {
 
 
 
+   /* @SideOnly(Side.CLIENT)
     @Inject(method = {"shouldSideBeRendered"}, at = {@At("HEAD")}, cancellable = true)
     public void shouldSideBeRendered(IBlockAccess worldIn, BlockPos pos, EnumFacing side, CallbackInfoReturnable<Boolean> cir) {
-        //cir.cancel();
+        if(Config.<Boolean>get("xray")) cir.setReturnValue(false);
 
-        //System.out.println("hi");
-
-    }
+    }*/
     /*
     @SideOnly(Side.CLIENT)
     @Overwrite

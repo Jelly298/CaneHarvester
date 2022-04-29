@@ -159,8 +159,8 @@ public class CaneHarvester {
 
     @EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-        customKeyBinds[0] = new KeyBinding("Open GUI", Config.<Long>get("openguikey").intValue(), "CaneHarvester");
-        customKeyBinds[1] = new KeyBinding("Toggle script", Config.<Long>get("togglekey").intValue(), "CaneHarvester");
+        customKeyBinds[0] = new KeyBinding("Open GUI", Config.get("openguikey") instanceof Long ? ((Long) Config.get("openguikey")).intValue() : Config.get("openguikey"), "CaneHarvester");
+        customKeyBinds[1] = new KeyBinding("Toggle script",Config.get("togglekey") instanceof Long ? ((Long) Config.get("togglekey")).intValue() : Config.get("togglekey"), "CaneHarvester");
         ClientRegistry.registerKeyBinding(customKeyBinds[0]);
         ClientRegistry.registerKeyBinding(customKeyBinds[1]);
     }
@@ -278,6 +278,7 @@ public class CaneHarvester {
     public void OnTickPlayer(TickEvent.ClientTickEvent event) { //Client -> player
 
         if (event.phase != TickEvent.Phase.START) return;
+
 
 
         // profit calculator && angle caculation

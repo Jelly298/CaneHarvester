@@ -37,11 +37,18 @@ public class Config {
             Object obj = jsonParser.parse(reader);
             config = (JSONObject) obj;
 
+            if(DefaultConfig.getDefaultConfig().size() != config.size()){
+                throw new Exception();
+            }
+            for(Object key : DefaultConfig.getDefaultConfig().keySet()){
+                if(!config.containsKey(key)) throw new Exception();
+            }
+
+
         } catch (Exception e) {
             writeConfig(DefaultConfig.getDefaultConfig());
             config = DefaultConfig.getDefaultConfig();
         }
-
         // Update all config categories
         updateInterfaces();
     }

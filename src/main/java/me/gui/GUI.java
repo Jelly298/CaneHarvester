@@ -33,18 +33,7 @@ public class GUI extends GuiScreen {
     }
     @Override
     public void initGui() {
-
-
         super.initGui();
-
-
-
-        //GuiScreenComponent.initGui(); // will be called from mixin later
-      //  webhookTab.setTitle(new GuiTitleComponent(30, "Webhook", -1, new Color(0, 0, 0).getRGB()));
-
-   //0xa9a9a9 0x
-
-
     }
 
 
