@@ -43,41 +43,25 @@ public class BlockUtils {
 
     // 0, 0 = initial block
     public static Block getBlockAround(int rightOffset, int frontOffset){
-        Minecraft mc = Minecraft.getMinecraft();
-        double X = mc.thePlayer.posX;
-        double Y = mc.thePlayer.posY;
-        double Z = mc.thePlayer.posZ;
-
-        return (mc.theWorld.getBlockState(
-                new BlockPos(mc.thePlayer.getLookVec().zCoord * -1 * rightOffset + mc.thePlayer.getLookVec().xCoord * frontOffset + X, Y,
-                        mc.thePlayer.getLookVec().xCoord * rightOffset + mc.thePlayer.getLookVec().zCoord * frontOffset + Z)).getBlock());
-
+        return getBlockAround(rightOffset, frontOffset, 0);
     }
     public static Block getBlockAround(int rightOffset, int frontOffset, int upOffset){
         Minecraft mc = Minecraft.getMinecraft();
-        int X = (int)mc.thePlayer.posX;
-        int Y = (int)mc.thePlayer.posY;
-        int Z = (int)mc.thePlayer.posZ;
-
-
+        int X = (int)Math.round(Math.floor(mc.thePlayer.posX));
+        int Y = (int)Math.round(Math.floor(mc.thePlayer.posY));
+        int Z = (int)Math.round(Math.floor(mc.thePlayer.posZ));
         return (mc.theWorld.getBlockState(
-                new BlockPos(getUnitZ() * -1 * rightOffset + getUnitX() * frontOffset + X + (X > 0? 0.1f : -0.1f), Y + upOffset,//
-                        getUnitX() * rightOffset + getUnitZ() * frontOffset + Z + (Z > 0? 0.1f : -0.1f))).getBlock()); //
+                new BlockPos(getUnitZ() * -1 * rightOffset + getUnitX() * frontOffset + X, Y + upOffset,//
+                        getUnitX() * rightOffset + getUnitZ() * frontOffset + Z)).getBlock());
 
     }
     public static BlockPos getBlockPosAround(int rightOffset, int frontOffset, int upOffset){
         Minecraft mc = Minecraft.getMinecraft();
-        int X = (int)mc.thePlayer.posX;
-        int Y = (int)mc.thePlayer.posY;
-        int Z = (int)mc.thePlayer.posZ;
-
-        return new BlockPos(getUnitZ() * -1 * rightOffset + getUnitX()* frontOffset + X + (willOverlap00(X, getUnitX()* frontOffset) ? (X + getUnitX() * frontOffset < 0 ? 1 : -1): 0), Y + upOffset,
-                        getUnitX() * rightOffset + getUnitZ() * frontOffset + Z + (willOverlap00(Z, getUnitZ()* frontOffset) ? (Z + getUnitZ()* frontOffset < 0 ? 1 : -1) : 0));
-
-    }
-    public static boolean willOverlap00(int posX, int relativeFrontOffset){
-        return (posX > 0 && posX + relativeFrontOffset <= 0) || (posX < 0 && posX + relativeFrontOffset >= 0);
-
+        int X = (int)Math.round(Math.floor(mc.thePlayer.posX));
+        int Y = (int)Math.round(Math.floor(mc.thePlayer.posY));
+        int Z = (int)Math.round(Math.floor(mc.thePlayer.posZ));
+        return new BlockPos(getUnitZ() * -1 * rightOffset + getUnitX()* frontOffset + X, Y + upOffset,
+                getUnitX() * rightOffset + getUnitZ() * frontOffset + Z);
 
     }
     public static Block getFrontBlock(){

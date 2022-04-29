@@ -283,7 +283,6 @@ public class CaneHarvester {
 
         // profit calculator && angle caculation
         if (mc.thePlayer != null && mc.theWorld != null) {
-
             currentLocation = getLocation();
             if (!rotating)
                 playerYaw = Math.round(AngleUtils.get360RotationYaw() / 90) < 4 ? Math.round(AngleUtils.get360RotationYaw() / 90) * 90 : 0;
@@ -354,6 +353,7 @@ public class CaneHarvester {
 
                 //always
                 Block blockIn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)).getBlock();
+                BlockPos blockInPos = new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ);
                 Block blockStandingOn = mc.theWorld.getBlockState(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)).getBlock();
 
                 double dx = Math.abs(mc.thePlayer.posX - mc.thePlayer.lastTickPosX);
@@ -463,7 +463,7 @@ public class CaneHarvester {
                 }
 
                 //chagnge back to left/right
-                if ((int)mc.thePlayer.posX == targetBlockPos.getX() && (int)mc.thePlayer.posZ == targetBlockPos.getZ() && walkingForward && Utils.isInCenterOfBlock()) {
+                if (blockInPos.getX() == targetBlockPos.getX() && blockInPos.getZ() == targetBlockPos.getZ() && walkingForward && Utils.isInCenterOfBlock()) {
                     updateKeybinds(false, false, false, false);
                     if(InventoryUtils.getFirstSlotStone() != -1 && Config.<Boolean>get("dropstone")){
                         activateFailsafe();
