@@ -1,8 +1,6 @@
 package me;
 
 import me.config.Config;
-import me.config.configTypes.JacobConfig;
-import me.config.configTypes.MiscellaneousConfig;
 import me.gui.GUI;
 import me.gui.JellyGui.GuiComponents.GuiLineComponent;
 import me.gui.JellyGui.GuiComponents.GuiMenuComponent;
@@ -39,7 +37,6 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.input.Keyboard;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -200,7 +197,11 @@ public class CaneHarvester {
             ScheduleRunnable(WarpHome, 10, TimeUnit.SECONDS);
             Utils.sendWebhook("Hub detected. Applying failsafe");
         }
-        if ((event.message.getFormattedText().contains("DYNAMIC") || (event.message.getFormattedText().contains("Couldn't warp you")) || (event.message.getFormattedText().contains("sending commands too fast"))) && inFailsafe) {
+        if ((event.message.getFormattedText().contains("DYNAMIC") || (event.message.getFormattedText().contains("Couldn't warp you"))) && inFailsafe) {
+            Utils.sendWebhook("Error while warping. Applying failsafe");
+            error = true;
+        }
+        if(event.message.getFormattedText().contains("sending commands too fast") && getLocation() != location.ISLAND){
             Utils.sendWebhook("Error while warping. Applying failsafe");
             error = true;
         }
@@ -488,7 +489,7 @@ public class CaneHarvester {
 
                     Utils.addCustomLog("Changing motion : Going " + currentDirection);
                     if(Config.<Boolean>get("resync"))
-                        ScheduleRunnable(checkDensity, 2, TimeUnit.SECONDS);
+                        ScheduleRunnable(CheckDesync, 1, TimeUnit.SECONDS);
                     ExecuteRunnable(checkFooter);
                     ExecuteRunnable(CheckFullInventory);
                     walkingForward = false;
@@ -528,6 +529,8 @@ public class CaneHarvester {
         @Override
         public void run() {
             try {
+                if(!enabled)
+                    return;
                 Utils.addCustomChat("Initializing resync...");
                 if (rotating || walkingForward || stuck || inFailsafe || currentDirection == direction.NONE) {
                     Utils.addCustomChat("Can't resync now");
@@ -589,13 +592,36 @@ public class CaneHarvester {
         }
     };
 
-    Runnable checkDensity = () -> {
-        if (stuck || inFailsafe || walkingForward)
+    Runnable CheckDesync = () -> {
+        if (stuck || inFailsafe || walkingForward || !enabled)
             return;
         if(!selling) {
-            Utils.addCustomLog("Checking density : " + getDensityPercentage(currentDirection));
-            if (getDensityPercentage(currentDirection) > 49) {
-                ExecuteRunnable(Resync);
+            try {
+                List<BlockPos> sugarcaneBlocks = new ArrayList<>();
+                for (int i = 0; i < 5; i++) {
+                    for(int j = -3; j < 4; j++) {
+                        if (BlockUtils.getBlockAround(j, i, 0).equals(Blocks.reeds))
+                            sugarcaneBlocks.add(BlockUtils.getBlockPosAround(j, i, 0));
+                    }
+                }
+                Utils.addCustomLog("Found valid sugarcane blocks : " + sugarcaneBlocks.size());
+                if(sugarcaneBlocks.size() == 0)
+                    return;
+                Thread.sleep(1000);
+                if(stuck || inFailsafe || walkingForward || !enabled)
+                    return;
+                int notBrokenBlocks = 0;
+                for (BlockPos sugarcaneBlock : sugarcaneBlocks) {
+                    if (mc.theWorld.getBlockState(sugarcaneBlock.up()).getBlock().equals(Blocks.reeds))
+                        notBrokenBlocks++;
+                }
+                Utils.addCustomLog("Not broken sugarcane blocks : " + notBrokenBlocks);
+                if (notBrokenBlocks/(sugarcaneBlocks.size() * 1.0f) >= 0.3f) {
+                    ExecuteRunnable(Resync);
+                }
+
+            }catch(Exception e){
+                e.printStackTrace();
             }
         }
     };
@@ -684,8 +710,6 @@ public class CaneHarvester {
                 Utils.sendWebhook("Inventory full, Auto Selling!");
                 ExecuteRunnable(autoSell);
                 unpressKeybinds();
-            } else {
-               // checkFull = false;
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
