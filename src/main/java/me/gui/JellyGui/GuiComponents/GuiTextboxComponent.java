@@ -9,6 +9,7 @@ import org.lwjgl.input.Mouse;
 
 public class GuiTextboxComponent implements IGuiButtonComponent, IGuiSettingsComponent{
 
+    //copyright belongs to 𝓙𝓮𝓵𝓵𝔂𝓛𝓪𝓫
     public static final float textboxLineBuffer = 0.3f;
 
     private GuiTextField textField;

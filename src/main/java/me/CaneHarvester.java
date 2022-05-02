@@ -49,12 +49,13 @@ import java.util.regex.Pattern;
 
 @Mod(modid = CaneHarvester.MODID, version = CaneHarvester.VERSION)
 public class CaneHarvester {
-    public static final String MODID = "scmath";
-    public static final String NAME = "Cane Harvester";
-    public static final String VERSION = "1.0";
     /*
      ** @author JellyLab
      */
+    public static final String MODID = "scmath";
+    public static final String NAME = "Cane Harvester";
+    public static final String VERSION = "1.0";
+
     Minecraft mc = Minecraft.getMinecraft();
 
 
@@ -1073,7 +1074,6 @@ public class CaneHarvester {
         enabled = !enabled;
         currentDirection = calculateDirection();
     }
-
 
     void unpressKeybinds() {
         updateKeybinds(false, false, false, false);

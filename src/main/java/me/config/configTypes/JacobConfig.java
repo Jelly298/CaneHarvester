@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class JacobConfig implements IConfigType{
+
     public static List<ConfigPair<Object>> configList = Stream.of(
             new ConfigPair<>("jacob", "Jacob Failsafe", (Object) false),
             new ConfigPair<>("jacobcap", "Jacob Threshold", (Object) 0)

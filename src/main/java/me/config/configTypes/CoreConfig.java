@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CoreConfig implements IConfigType{
+    //  𝕒ᑌtĦ𝓞𝐫 𝕚Ｓ ј𝔼𝕝ℓ𝓨ㄥ𝔸๒
+
     public static List<ConfigPair<Object>> configList = Stream.of(
             new ConfigPair<>("resync", "Resync", (Object) false),
             new ConfigPair<>("dropstone", "Drop stone", (Object) false),
