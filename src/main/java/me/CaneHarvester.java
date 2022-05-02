@@ -95,7 +95,7 @@ public class CaneHarvester {
     public static IChatComponent footer;
 
 
-    public static BlockPos targetBlockPos = new BlockPos(10000, 10000, 10000);
+    public static BlockPos targetBlockPos = new BlockPos(1000, 1000, 1000);
 
 
     public int keybindA = mc.gameSettings.keyBindLeft.getKeyCode();
