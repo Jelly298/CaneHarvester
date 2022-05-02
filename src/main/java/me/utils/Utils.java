@@ -58,26 +58,22 @@ public class Utils {
     }
 
 
-
-
-
-
-
     public static int nextInt(int upperbound){
         Random r = new Random();
         return r.nextInt(upperbound);
     }
     public static void addCustomChat(String message, EnumChatFormatting color){
-        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_PURPLE +
-                "CANE_HARVESTER " + color + message));
+        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.GREEN + "" +  EnumChatFormatting.BOLD+
+                "Cane Harvester " +  EnumChatFormatting.DARK_GRAY + "» " + color + message));
     }
     public static void addCustomChat(String message){
-        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_PURPLE +
-                "CANE_HARVESTER " + EnumChatFormatting.GRAY + message));
+        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.GREEN + "" +  EnumChatFormatting.BOLD+
+                "Cane Harvester " +  EnumChatFormatting.DARK_GRAY + "» " + EnumChatFormatting.GRAY + message));
     }
     public static void addCustomLog(String message){
-        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.LIGHT_PURPLE +
-                "CANE_HARVESTER_LOG " + EnumChatFormatting.GRAY + message));
+        if(Config.<Boolean>get("log"))
+        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_GREEN + "" +  EnumChatFormatting.BOLD+
+                "Log " + EnumChatFormatting.DARK_GRAY + "» " + EnumChatFormatting.GRAY + message));
     }
 
 

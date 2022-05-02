@@ -11,7 +11,8 @@ public class CoreConfig implements IConfigType{
     public static List<ConfigPair<Object>> configList = Stream.of(
             new ConfigPair<>("resync", "Resync", (Object) false),
             new ConfigPair<>("dropstone", "Drop stone", (Object) false),
-            new ConfigPair<>("fastbreak", "Fastbreak", (Object) false)
+            new ConfigPair<>("fastbreak", "Fastbreak", (Object) false),
+            new ConfigPair<>("log", "Log mode", (Object) false)
     ).collect(Collectors.toList());
 
     @Override

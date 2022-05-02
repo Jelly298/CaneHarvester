@@ -242,7 +242,6 @@ public class CaneHarvester {
         {
             Config.set("openguikey", CaneHarvester.customKeyBinds[0].getKeyCode());
             Config.set("togglekey", CaneHarvester.customKeyBinds[1].getKeyCode());
-
         }
     }
 
@@ -344,7 +343,8 @@ public class CaneHarvester {
                 if(!rotating){
                     try {
                         if(Config.<Boolean>get("jacob")) {
-                            if (SkyblockUtils.getJacobEventCounter() > Integer.parseInt(Config.get("jacob"))) { //Jacob Config add back
+                            int jacobcap = (Config.get("jacobcap") instanceof Long) ? ((Long) Config.get("jacobcap")).intValue() : Config.get("jacobcap");
+                            if (SkyblockUtils.getJacobEventCounter() > jacobcap) { //Jacob Config add back
                                 ExecuteRunnable(JacobFailsafe);
                             }
                         }
@@ -720,7 +720,7 @@ public class CaneHarvester {
 
     Runnable islandCage = () -> {
         try {
-            Utils.addCustomLog("Cage detected");
+            Utils.addCustomChat("Cage detected");
             Utils.sendWebhook("Cage detected. Applying failsafes");
             Thread.sleep(400);
             updateKeybinds(false, false, false, false);
@@ -1207,36 +1207,6 @@ public class CaneHarvester {
 
         setspawnLag = false;
     }
-
-
-    int getDensityPercentage(direction oppositeDir) {
-        try {
-            ArrayList<Block> blocks = new ArrayList<>();
-            if (oppositeDir == direction.LEFT) {
-                for (int i = 3; i < 6; i++)
-                    blocks.add(BlockUtils.getBlockAround(i, 0, 1));
-            } else {
-                for (int i = 3; i < 6; i++)
-                    blocks.add(BlockUtils.getBlockAround(-i, 0, 1));
-            }
-
-            int totalBlock = blocks.size();
-            int totalSugarcaneBlock = 0;
-            for (Block block : blocks) {
-                if (block.equals(Blocks.reeds))
-                    totalSugarcaneBlock++;
-            }
-            if(totalSugarcaneBlock == 0 || totalBlock == 0)
-                return 0;
-
-            return (int) (totalSugarcaneBlock / (totalBlock * 1.0d) * 100);
-        } catch (Exception e) {
-
-        }
-        return -1;
-
-    }
-
     void reconnect() {
         FMLClientHandler.instance().connectToServer((GuiScreen)new GuiMultiplayer((GuiScreen)new GuiMainMenu()), new ServerData("Hypixel", "mc.hypixel.net", false));
     }

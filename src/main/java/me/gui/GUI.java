@@ -54,27 +54,12 @@ public class GUI extends GuiScreen {
     public boolean doesGuiPauseGame(){
         return false;
     }
-
-
-    @Override
-    protected void actionPerformed(GuiButton button){
-
-
-    }
-
-    @Override
-    public void onGuiClosed(){
-       // GuiScreenComponent.onGuiClosed(); // will be called from mixin later
-
-    }
-
     public void keyTyped(char par1, int par2)
     {
         try {
             if (par2 == Keyboard.KEY_ESCAPE) {
                 mc.thePlayer.closeScreen();
             }
-            //GuiScreenComponent.keyTyped(par1, par2); // will be called from mixin later
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -84,17 +69,5 @@ public class GUI extends GuiScreen {
     public void updateScreen()
     {
         super.updateScreen();
-        //GuiScreenComponent.updateScreen(); // will be called from mixin later
     }
-   public void mouseClicked(int x, int y, int btn) {
-        try {
-           // GuiScreenComponent.mouseClicked(x, y, btn); // will be called from mixin later
-
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-    }
-
-
-
 }
