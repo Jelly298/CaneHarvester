@@ -84,7 +84,7 @@ public class SkyblockUtils extends Utils{
             String myData = "";
             for (String line : SkyblockUtils.getSidebarLines()) {
                 String cleanedLine = SkyblockUtils.cleanSB(line);
-                if (cleanedLine.contains("Sugar Cane") || cleanedLine.contains("Mushroom")) {
+                if (cleanedLine.contains("Sugar") || cleanedLine.contains("Cane")) {
                     myData = cleanedLine;
                 }
             }

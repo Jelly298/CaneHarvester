@@ -232,6 +232,13 @@ public class CaneHarvester {
             profitGUI.setLine(new GuiLineComponent(12, Utils.formatInfo("Inventory price", "$" + Utils.formatNumber(totalMoney)), -1), 3);
             profitGUI.setLine(new GuiLineComponent(12,  Utils.formatInfo("Hoe counter",  Utils.formatNumber(SkyblockUtils.getHoeCounter())), -1), 4);
             if(mc.currentScreen == null) profitGUI.draw();
+          //  mc.fontRendererObj.drawString("dy: " + Math.abs(mc.thePlayer.posY - mc.thePlayer.lastTickPosY), 4, new ScaledResolution(mc).getScaledHeight() - 140 - 84, -1);
+          //  mc.fontRendererObj.drawString(!rotating && !inFailsafe -1);
+          //  mc.fontRendererObj.drawString("KeyBindS: " + (mc.gameSettings.keyBindBack.isKeyDown() ? "Pressed" : "Not pressed"), 4, new ScaledResolution(mc).getScaledHeight() - 140 - 36, -1);
+           // mc.fontRendererObj.drawString("KeyBindA: " + (mc.gameSettings.keyBindLeft.isKeyDown() ? "Pressed" : "Not pressed"), 4, new ScaledResolution(mc).getScaledHeight() - 140 - 24, -1);
+           // mc.fontRendererObj.drawString("KeyBindD: " + (mc.gameSettings.keyBindRight.isKeyDown() ? "Pressed" : "Not pressed"), 4, new ScaledResolution(mc).getScaledHeight() - 140 - 12, -1);
+
+         //   mc.fontRendererObj.drawString(BlockUtils.getFrontBlock() + " " + BlockUtils.getBackBlock().toString() + " " + BlockUtils.getRightBlock().toString() + " " + BlockUtils.getLeftBlock().toString(), 4, new ScaledResolution(mc).getScaledHeight() - 20, -1);
 
         }
 
@@ -251,21 +258,21 @@ public class CaneHarvester {
 
         if (!rotating) {
             if (customKeyBinds[1].isPressed()) {
-
-
-                if (!enabled) {
-                    if (getLocation() == location.ISLAND) {
-                        if(mc.thePlayer.inventoryContainer.inventorySlots.get(42).getStack() == null) {
-                            Utils.addCustomChat("Starting script");
-                            toggle();
-                        } else
-                            Utils.addCustomLog("Clear inventory slot 7");
-                    } else
-                        Utils.addCustomChat("Wrong location detected");
-
-                } else
+                Utils.addCustomChat("Pressing");
+                if(enabled){
                     toggle();
-
+                    return;
+                }
+                if(getLocation() != location.ISLAND){
+                    Utils.addCustomChat("Wrong location detected");
+                    return;
+                }
+                if(mc.thePlayer.inventoryContainer.inventorySlots.get(42).getStack() != null){
+                    Utils.addCustomChat("Clear inventory slot 7");
+                    return;
+                }
+                Utils.addCustomChat("Starting script");
+                toggle();
             }
             if (customKeyBinds[0].isPressed()) {
                 mc.displayGuiScreen(new GUI());
@@ -344,7 +351,7 @@ public class CaneHarvester {
                 if(!rotating){
                     try {
                         if(Config.<Boolean>get("jacob")) {
-                            int jacobcap = (Config.get("jacobcap") instanceof Long) ? ((Long) Config.get("jacobcap")).intValue() : Config.get("jacobcap");
+                            int jacobcap = (Config.get("jacobcap") instanceof Long) ? ((Long) Config.get("jacobcap")).intValue() : Integer.parseInt(Config.get("jacobcap"));
                             if (SkyblockUtils.getJacobEventCounter() > jacobcap) { //Jacob Config add back
                                 ExecuteRunnable(JacobFailsafe);
                             }
@@ -361,7 +368,7 @@ public class CaneHarvester {
                 double dx = Math.abs(mc.thePlayer.posX - mc.thePlayer.lastTickPosX);
                 double dz = Math.abs(mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ);
                 double dy = Math.abs(mc.thePlayer.posY - mc.thePlayer.lastTickPosY);
-                boolean falling = blockIn == Blocks.air && dy != 0;
+                boolean falling = blockIn.equals(Blocks.air) && dy != 0;
 
 
                 mc.gameSettings.pauseOnLostFocus = false;
@@ -579,8 +586,8 @@ public class CaneHarvester {
                     enabled = false;
                     Thread.sleep(1000);
                     if (!inTPPad) {
-                        playerYaw = Math.round(Math.abs(playerYaw - 180));
-                        AngleUtils.smoothRotateClockwise(180);
+                        playerYaw = Math.round(playerYaw + rotateAmount());
+                        AngleUtils.smoothRotateClockwise(rotateAmount());
                     }
                     Thread.sleep(5000);
                     rotating = false;
@@ -1176,6 +1183,59 @@ public class CaneHarvester {
                 (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) && !BlockUtils.isWalkable(BlockUtils.getRightBlock())) ||
                 (!BlockUtils.isWalkable(BlockUtils.getFrontBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock())) ||
                 (!BlockUtils.isWalkable(BlockUtils.getRightBlock()) && !BlockUtils.isWalkable(BlockUtils.getLeftBlock()));
+    }
+
+    int rotateAmount(){
+        boolean yes = true;
+        for(int i = 1; i < 5; i++){
+            if(!(BlockUtils.getBlockAround(i, 0, 0).equals(Blocks.reeds) ||
+                    BlockUtils.getBlockAround(i, 1, 0).equals(Blocks.reeds))){
+                yes = false;
+                break;
+            }
+        }
+        if(yes) {
+            return 180;
+        }
+        yes = true;
+        for(int i = 1; i < 5; i++){
+            if(!(BlockUtils.getBlockAround(-i, 0, 0).equals(Blocks.reeds) ||
+                    BlockUtils.getBlockAround(-i, 1, 0).equals(Blocks.reeds))){
+                yes = false;
+                break;
+            }
+        }
+        if(yes){
+            return 180;
+        }
+        yes = true;
+        for(int i = 1; i < 5; i++){
+            if(!(BlockUtils.getBlockAround(0, i, 0).equals(Blocks.reeds) ||
+                    BlockUtils.getBlockAround(1, i, 0).equals(Blocks.reeds))){
+                yes = false;
+                break;
+            }
+        }
+        if(yes){
+            return 90;
+        }
+        yes = true;
+        for(int i = 1; i < 5; i++){
+            if(!(BlockUtils.getBlockAround(0, -i, 0).equals(Blocks.reeds) ||
+                    BlockUtils.getBlockAround(1, -i, 0).equals(Blocks.reeds))){
+                yes = false;
+                break;
+            }
+        }
+        if(yes){
+            return -90;
+        }
+        Utils.addCustomLog("Unknown rotation casee");
+        return 0;
+
+
+
+
     }
 
 
